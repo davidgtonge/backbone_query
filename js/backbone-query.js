@@ -1,5 +1,5 @@
 (function() {
-  var and_iterator, iterator, or_iterator, parse_query, process_query, test_query_value,
+  var and_iterator, get_models, iterator, or_iterator, page_models, parse_query, process_query, sort_models, test_query_value,
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   parse_query = function(raw_query) {
@@ -44,6 +44,8 @@
         return _(value).isString();
       case "$between":
         return _(value).isArray() && (value.length === 2);
+      case "$cb":
+        return _(value).isFunction();
       default:
         return true;
     }
@@ -102,6 +104,8 @@
               return model.get(q.key).indexOf(q.value) !== -1;
             case "$regex":
               return q.value.test(model.get(q.key));
+            case "$cb":
+              return q.value(model.get(q.key));
           }
         })())) {
           return andOr;
@@ -134,48 +138,67 @@
     }
   };
 
+  get_models = function(collection, query) {
+    var compound_query, reduce_iterator, results, type;
+    compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value();
+    switch (compound_query.length) {
+      case 0:
+        return process_query.$and(collection, query);
+      case 1:
+        type = compound_query[0];
+        return process_query[type](collection, query[type]);
+      default:
+        results = (function() {
+          var _i, _len, _results;
+          _results = [];
+          for (_i = 0, _len = compound_query.length; _i < _len; _i++) {
+            type = compound_query[_i];
+            _results.push(process_query[type](collection, query[type]));
+          }
+          return _results;
+        })();
+        reduce_iterator = function(memo, result) {
+          return memo = _.intersection(memo, result);
+        };
+        return _.reduce(_.rest(results), reduce_iterator, results[0]);
+    }
+  };
+
+  sort_models = function(models, options) {
+    if (_(options.sortBy).isString()) {
+      models = _(models).sortBy(function(model) {
+        return model.get(options.sortBy);
+      });
+    } else if (_(options.sortBy).isFunction()) {
+      models = _(models).sortBy(options.sortBy);
+    }
+    if (options.order === "desc") models = models.reverse();
+    return models;
+  };
+
+  page_models = function(models, options) {
+    var end, start;
+    if (options.offset) {
+      start = options.offset;
+    } else if (options.page) {
+      start = (options.page - 1) * options.limit;
+    } else {
+      start = 0;
+    }
+    end = start + options.limit;
+    return models.slice(start, end);
+  };
+
   Backbone.QueryCollection = Backbone.Collection.extend({
-    query: function(query, pager) {
-      var collection, compound_query, end, models, reduce_iterator, results, start, type;
-      if (pager == null) pager = false;
-      collection = this;
-      compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value();
-      models = ((function() {
-        switch (compound_query.length) {
-          case 0:
-            return process_query.$and(collection, query);
-          case 1:
-            type = compound_query[0];
-            return process_query[type](collection, query[type]);
-          default:
-            results = (function() {
-              var _i, _len, _results;
-              _results = [];
-              for (_i = 0, _len = compound_query.length; _i < _len; _i++) {
-                type = compound_query[_i];
-                _results.push(process_query[type](collection, query[type]));
-              }
-              return _results;
-            })();
-            reduce_iterator = function(memo, result) {
-              return memo = _.intersection(memo, result);
-            };
-            return _.reduce(_.rest(results), reduce_iterator, results[0]);
-        }
-      })());
-      if (_(pager).isObject() && pager.limit) {
-        if (pager.offset) {
-          start = pager.offset;
-        } else if (pager.page) {
-          start = (pager.page - 1) * pager.limit;
-        } else {
-          start = 0;
-        }
-        end = start + pager.limit;
-        return models.slice(start, end);
-      } else {
-        return models;
+    query: function(query, options) {
+      var models;
+      if (options == null) options = false;
+      models = get_models(this, query);
+      if (_(options).isObject()) {
+        if (options.sortBy) models = sort_models(models, options);
+        if (options.limit) models = page_models(models, options);
       }
+      return models;
     }
   });
 

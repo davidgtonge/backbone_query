@@ -300,6 +300,20 @@
     return equal(result.length, 1);
   });
 
+  test("$cb - callback", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      title: {
+        $cb: function(attr) {
+          return attr.charAt(0).toLowerCase() === "c";
+        }
+      }
+    });
+    equal(result.length, 1);
+    return equal(result[0].get("title"), "Contact");
+  });
+
   test("$and operator", function() {
     var a, result;
     a = create();
@@ -425,6 +439,57 @@
       page: 2
     });
     return equal(result.length, 0);
+  });
+
+  test("Sorder by model key", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      likes: {
+        $gt: 1
+      }
+    }, {
+      sortBy: "likes"
+    });
+    equal(result.length, 3);
+    equal(result[0].get("title"), "About");
+    equal(result[1].get("title"), "Home");
+    return equal(result[2].get("title"), "Contact");
+  });
+
+  test("Sorder by model key with descending order", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      likes: {
+        $gt: 1
+      }
+    }, {
+      sortBy: "likes",
+      order: "desc"
+    });
+    equal(result.length, 3);
+    equal(result[2].get("title"), "About");
+    equal(result[1].get("title"), "Home");
+    return equal(result[0].get("title"), "Contact");
+  });
+
+  test("Sorder by function", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      likes: {
+        $gt: 1
+      }
+    }, {
+      sortBy: function(model) {
+        return model.get("title").charAt(2);
+      }
+    });
+    equal(result.length, 3);
+    equal(result[2].get("title"), "About");
+    equal(result[0].get("title"), "Home");
+    return equal(result[1].get("title"), "Contact");
   });
 
 }).call(this);

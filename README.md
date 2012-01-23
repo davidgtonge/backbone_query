@@ -149,6 +149,14 @@ MyCollection.query({ content: /coffeescript/gi });
 // Same as above
 ```
 
+### $cb
+A callback function can be supplied as a test. The callback will receive the attribute and should return either true or false
+
+```js
+MyCollection.query({ title: {$cb: function(attr){ return attr.charAt(0) === "c";}} });
+// Returns all models that have a title attribute that starts with "c"
+```
+
 Combined Queries
 ================
 
@@ -202,10 +210,25 @@ MyCollection.query({
 //either have more than 10 likes or contain the color red.
 ```
 
+Sorting
+=======
+Optional `sortBy` and `order` attributes can be supplied as part of an options object.
+`sortBy` can either be a model key or a callback function which will be called with each model in the array.
+
+```js
+MyCollection.query({title: {$like: "News"}}, {sortBy: "likes"});
+// Returns all models that contain "News" in the title, sorted according to their "likes" attribute (ascending)
+MyCollection.query({title: {$like: "News"}}, {sortBy: "likes", order:"desc"});
+// Same as above, but "descending"
+MyCollection.query({title: {$like: "News"}}, {sortBy: function(model){ return model.get("title").charAt(1);}} );
+// Results sorted according to 2nd character of the title attribute
+```
+
+
 Paging
 ======
-To return only a subset of the results supply an additional paging object to the query method.
-This object must contain a `limit` property and can contain either a `offset` or a `page` property.
+To return only a subset of the results paging properties can be supplied as part of an options object.
+A `limit` property must be supplied and optionally a `offset` or a `page` property can be supplied.
 
 ```js
 MyCollection.query({likes:{$gt:10}}, {limit:10});

@@ -141,6 +141,11 @@ test "$regex4", ->
   result = a.query content: /javascript/i
   equal result.length, 1
 
+test "$cb - callback", ->
+  a = create()
+  result = a.query title: {$cb: (attr) -> attr.charAt(0).toLowerCase() is "c"}
+  equal result.length, 1
+  equal result[0].get("title"), "Contact"
 
 test "$and operator", ->
   a = create()
@@ -185,12 +190,26 @@ test "Page", ->
   result = a.query {likes: {$gt: 1}}, {limit:3, page:2}
   equal result.length, 0
 
+test "Sorder by model key", ->
+  a = create()
+  result = a.query {likes: {$gt: 1}}, {sortBy:"likes"}
+  equal result.length, 3
+  equal result[0].get("title"), "About"
+  equal result[1].get("title"), "Home"
+  equal result[2].get("title"), "Contact"
 
+test "Sorder by model key with descending order", ->
+  a = create()
+  result = a.query {likes: {$gt: 1}}, {sortBy:"likes", order:"desc"}
+  equal result.length, 3
+  equal result[2].get("title"), "About"
+  equal result[1].get("title"), "Home"
+  equal result[0].get("title"), "Contact"
 
-
-
-
-
-
-
-
+test "Sorder by function", ->
+  a = create()
+  result = a.query {likes: {$gt: 1}}, {sortBy: (model) -> model.get("title").charAt(2) }
+  equal result.length, 3
+  equal result[2].get("title"), "About"
+  equal result[0].get("title"), "Home"
+  equal result[1].get("title"), "Contact"

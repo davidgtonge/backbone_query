@@ -28,6 +28,7 @@ test_query_value = (type, value) ->
     when "$regex" then _(value).isRegExp()
     when "$like" then _(value).isString()
     when "$between" then _(value).isArray() and (value.length is 2)
+    when "$cb" then _(value).isFunction()
     else true
 
 
@@ -60,7 +61,8 @@ iterator = (collection, query, andOr) ->
         when "$size" then model.get(q.key).length is q.value
         when "$exists", "$has" then model.has(q.key) is q.value
         when "$like" then model.get(q.key).indexOf(q.value) isnt -1
-        when "$regex" then q.value.test model.get(q.key))
+        when "$regex" then q.value.test model.get(q.key)
+        when "$cb" then q.value model.get(q.key))
     # For an "or" query, if all the queries are false, then we return false
     # For an "and" query, if all the queries are true, then we return true
     not andOr
@@ -75,46 +77,66 @@ process_query =
   $nor: (collection, query) -> _.difference collection.models, (or_iterator collection, query)
   $not: (collection, query) -> _.difference collection.models, (and_iterator collection, query)
 
+get_models = (collection, query) ->
+  # We iterate through the query keys to check for any of the compound methods
+  compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value()
+
+  (switch compound_query.length
+    # If no compound methods are found we use the "and" iterator
+    when 0 then process_query.$and collection, query
+
+    # If only 1 compound method we invoke just that method
+    when 1
+      type = compound_query[0]
+      process_query[type] collection, query[type]
+
+    # If more than 1 method is found, we process each of the methods
+    else
+      results = (for type in compound_query
+        process_query[type] collection, query[type])
+
+    # We now need to find the models that are in present in all result sets
+    # As we have an unknown number of result sets, we use the reduce iterator together with underscores "intersection"
+      reduce_iterator = (memo, result) ->
+        memo = _.intersection memo, result
+
+    # Here the reduce iterator is called, passing in the first result set as the initial memo
+      _.reduce _.rest(results), reduce_iterator, results[0])
+
+sort_models = (models, options) ->
+  if _(options.sortBy).isString()
+    models = _(models).sortBy (model) -> model.get(options.sortBy)
+  else if _(options.sortBy).isFunction()
+    models = _(models).sortBy(options.sortBy)
+
+  if options.order is "desc" then models = models.reverse()
+
+  models
+
+page_models = (models, options) ->
+  # Expects object in the form: {limit: num, offset: num or page: num
+  if options.offset then start = options.offset
+  else if options.page then start = (options.page - 1) * options.limit
+  else start = 0
+
+  end = start + options.limit
+  models[start...end]
+
+
+
 Backbone.QueryCollection = Backbone.Collection.extend
 
   # The main query method
-  query: (query, pager = false) ->
-    collection = @
+  query: (query, options = false) ->
 
-    # We iterate through the query keys to check for any of the compound methods
-    compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value()
+    # Retrieve the match models using the supplied query
+    models = get_models @, query
 
-    models = (switch compound_query.length
-      # If no compound methods are found we use the "and" iterator
-      when 0 then process_query.$and collection, query
+    if _(options).isObject()
+      # If a sortBy param is specified then sort the results
+      if options.sortBy then models = sort_models models, options
+      # If a limit param is specified than slice the results
+      if options.limit then models = page_models models, options
 
-      # If only 1 compound method we invoke just that method
-      when 1
-        type = compound_query[0]
-        process_query[type] collection, query[type]
-
-      # If more than 1 method is found, we process each of the methods
-      else
-        results = (for type in compound_query
-          process_query[type] collection, query[type])
-
-        # We now need to find the models that are in present in all result sets
-        # As we have an unknown number of result sets, we use the reduce iterator together with underscores "intersection"
-        reduce_iterator = (memo, result) ->
-          memo = _.intersection memo, result
-
-        # Here the reduce iterator is called, passing in the first result set as the initial memo
-        _.reduce _.rest(results), reduce_iterator, results[0])
-
-    if _(pager).isObject() and pager.limit
-      # Expects object in the form: {limit: num, offset: num or page: num
-      if pager.offset then start = pager.offset
-      else if pager.page then start = (pager.page - 1) * pager.limit
-      else start = 0
-
-      end = start + pager.limit
-      models[start...end]
-
-    else
-      # If no paging parameters are supplied then all the results are returned
-      models
+    # Return the results
+    models
