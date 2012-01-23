@@ -9,7 +9,7 @@ Usage
 
 To install, include the `js/backbone-query.js` file in your HTML page, after Backbone and it's dependencies.
 
-Then extends your collections from Backbone.QueryCollection rather than Backbone.Collection.
+Then extend your collections from Backbone.QueryCollection rather than from Backbone.Collection.
 Your collections will now have a `query` method that can be used as described below.
 
 Query API
@@ -124,8 +124,8 @@ MyCollection.query({ content: /coffeescript/gi });
 Combined Queries
 ================
 
-Multiple queries can be combined together. By default all supplied queries must be matched (and). However it is possible
-to specify either `$or` or `$nor` to implement alternate logic.
+Multiple queries can be combined together. By default all supplied queries must be matched `$and`. However it is possible
+to specify either `$or`, `$nor`, `$not` to implement alternate logic.
 
 ### $and
 
@@ -144,7 +144,7 @@ MyCollection.query({ $or: { title: {$like: "News"}, likes: {$gt: 10}}});
 ```
 
 ### $nor
-The opposite of or
+The opposite of `$or`
 
 ```js
 MyCollection.query({ $nor: { title: {$like: "News"}, likes: {$gt: 10}}});
@@ -152,15 +152,29 @@ MyCollection.query({ $nor: { title: {$like: "News"}, likes: {$gt: 10}}});
 ```
 
 ### $not
-The opposite of and
+The opposite of `$and`
 
 ```js
 MyCollection.query({ $not: { title: {$like: "News"}, likes: {$gt: 10}}});
 // Returns all models that don't contain "News" in the title AND DON'T have more than 10 likes.
 ```
 
+Compound Queries
+================
+
+It is possible to use multiple combined queries, for example searching for models that have a specific title attribute,
+and either a category of "abc" or a tag of "xyz"
+
+```js
+MyCollection.query({
+    $and: { title: {$like: "News"}},
+    $or: {likes: {$gt: 10}, color:{$contains:"red"}}
+});
+//Returns models that have "News" in their title and
+//either have more than 10 likes or contain the color red.
+
 
 Author
 ======
 
-Dave Tonge - (http://github.com/davidgtonge)
+Dave Tonge - [davidgtonge](http://github.com/davidgtonge)
