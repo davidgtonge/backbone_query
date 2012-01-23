@@ -2,7 +2,7 @@ fs     = require 'fs'
 {exec} = require 'child_process'
 
 
-task 'build', 'Watch prod source files and build changes', ->
+task 'build', 'Build JS files from Coffee sources', ->
 
   exec 'coffee -c -o js/ src/', (err, stdout, stderr) ->
     throw err if err

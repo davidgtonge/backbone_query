@@ -81,7 +81,7 @@ To check if a value in inbetwen 2 query values use the $between operator and sup
 ```js
 MyCollection.query({ likes: {$between:[5,15} });
 // Returns all models which have a "likes" attribute of greater than 5 and less then 15
-
+```
 
 ### $in
 An array of possible values can be supplied using $in, a model will be returned if any of the supplied values is matched
@@ -217,7 +217,7 @@ MyCollection.query({likes:{$gt:10}}, {limit:10, offset:5});
 MyCollection.query({likes:{$gt:10}}, {limit:10, page:2});
 // Returns 10 models that have more than 10 likes starting
 //at the 11th model in the results (page 2)
-
+```
 
 Still Todo
 =========
