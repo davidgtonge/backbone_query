@@ -3,6 +3,7 @@ backbone-query
 
 Adds the ability to search for models with a query api similar to
 [MongoDB](http://www.mongodb.org/display/DOCS/Advanced+Queries)
+This is quite a new project and Pull requests are welcome!
 
 Usage
 =====
@@ -76,7 +77,7 @@ MyCollection.query({ likes: {$gte:10} });
 ```
 
 ### $between
-To check if a value in inbetwen 2 query values use the $between operator and supply an array with the min and max value
+To check if a value is in-between 2 query values use the $between operator and supply an array with the min and max value
 
 ```js
 MyCollection.query({ likes: {$between:[5,15} });

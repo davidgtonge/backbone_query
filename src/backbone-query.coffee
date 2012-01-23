@@ -43,6 +43,7 @@ iterator = (collection, query, andOr) ->
       return andOr if andOr is (switch q.type
         when "$equal" then model.get(q.key) is q.value
         when "$contains"
+          #For this method we need to check that the model attribute is an array before we attempt to loop through it
           attr = model.get(q.key)
           if _(attr).isArray() then (q.value in attr) else false
         when "$ne" then model.get(q.key) isnt q.value
@@ -65,7 +66,7 @@ iterator = (collection, query, andOr) ->
 and_iterator = (collection, query) -> iterator collection, query, false
 or_iterator = (collection, query) -> iterator collection, query, true
 
-# A object is created with or, and, nor and not methods
+# A object with or, and, nor and not methods
 process_query =
   $and: (collection, query) -> and_iterator collection, query
   $or: (collection, query) -> or_iterator collection, query
@@ -113,4 +114,5 @@ Backbone.QueryCollection = Backbone.Collection.extend
       models[start...end]
 
     else
+      # If no paging parameters are supplied then all the results are returned
       models
