@@ -10,7 +10,10 @@
       o = {
         key: key
       };
-      if (_(query_param).isObject()) {
+      if (_.isRegExp(query_param)) {
+        o.type = "$regex";
+        o.value = query_param;
+      } else if (_(query_param).isObject()) {
         _fn = function(type, value) {
           if (test_query_value(type, value)) {
             o.type = type;
@@ -21,9 +24,6 @@
           value = query_param[type];
           _fn(type, value);
         }
-      } else if (_(query_param).isRegExp()) {
-        o.type = "$regex";
-        o.value = query_param;
       } else {
         o.type = "$equal";
         o.value = query_param;
@@ -100,7 +100,7 @@
             case "$like":
               return model.get(q.key).indexOf(q.value) !== -1;
             case "$regex":
-              return model.get(q.key).match(q.value);
+              return q.value.test(model.get(q.key));
           }
         })())) {
           return andOr;
@@ -171,7 +171,6 @@
           start = 0;
         }
         end = start + pager.limit;
-        console.log(start, end, models);
         return models.slice(start, end);
       } else {
         return models;

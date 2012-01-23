@@ -229,6 +229,49 @@
     return equal(result.length, 3);
   });
 
+  test("$regex", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      content: {
+        $regex: /javascript/gi
+      }
+    });
+    equal(result.length, 1);
+    return equal(result[0].get("title"), "About");
+  });
+
+  test("$regex2", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      content: {
+        $regex: /dummy/
+      }
+    });
+    return equal(result.length, 1);
+  });
+
+  test("$regex3", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      content: {
+        $regex: /dummy/i
+      }
+    });
+    return equal(result.length, 3);
+  });
+
+  test("$regex4", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      content: /javascript/i
+    });
+    return equal(result.length, 1);
+  });
+
   test("$and operator", function() {
     var a, result;
     a = create();

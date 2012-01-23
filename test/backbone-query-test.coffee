@@ -106,7 +106,27 @@ test "$like operator 2", ->
   result = a.query content: {$like: "content"}
   equal result.length, 3
 
-# TODO: Need regex tests
+test "$regex", ->
+  a = create()
+  result = a.query content: {$regex: /javascript/gi}
+  equal result.length, 1
+  equal result[0].get("title"), "About"
+
+test "$regex2", ->
+  a = create()
+  result = a.query content: {$regex: /dummy/}
+  equal result.length, 1
+
+test "$regex3", ->
+  a = create()
+  result = a.query content: {$regex: /dummy/i}
+  equal result.length, 3
+
+test "$regex4", ->
+  a = create()
+  result = a.query content: /javascript/i
+  equal result.length, 1
+
 
 test "$and operator", ->
   a = create()

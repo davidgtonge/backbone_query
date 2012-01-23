@@ -3,19 +3,20 @@
 parse_query = (raw_query) ->
   (for key, query_param of raw_query
     o = {key}
+
+    # First we test if the param is a regular expression
+    if _.isRegExp(query_param)
+      o.type = "$regex"
+      o.value = query_param
   # If the query paramater is an object then extract the key and value
-    if _(query_param).isObject()
+    else if _(query_param).isObject()
       for type, value of query_param
         do (type, value) ->
           if test_query_value type, value
             o.type = type
             o.value = value
-      # If its not an object then check if its a regular expression
-    else if _(query_param).isRegExp()
-      o.type = "$regex"
-      o.value = query_param
-      # Default query type is $equal
-    else
+
+    else # Default query type is $equal
       o.type = "$equal"
       o.value = query_param
     o)
@@ -56,7 +57,7 @@ iterator = (collection, query, andOr) ->
         when "$size" then model.get(q.key).length is q.value
         when "$exists", "$has" then model.has(q.key) is q.value
         when "$like" then model.get(q.key).indexOf(q.value) isnt -1
-        when "$regex" then  model.get(q.key).match(q.value))
+        when "$regex" then q.value.test model.get(q.key))
     # For an "or" query, if all the queries are false, then we return false
     # For an "and" query, if all the queries are true, then we return true
     not andOr
@@ -104,13 +105,11 @@ Backbone.QueryCollection = Backbone.Collection.extend
 
     if _(pager).isObject() and pager.limit
       # Expects object in the form: {limit: num, offset: num or page: num
-      # paging stuff
       if pager.offset then start = pager.offset
       else if pager.page then start = (pager.page - 1) * pager.limit
       else start = 0
 
       end = start + pager.limit
-      console.log start,end, models
       models[start...end]
 
     else
