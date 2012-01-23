@@ -125,6 +125,18 @@
     return equal(result.length, 2);
   });
 
+  test("$between operator", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      likes: {
+        $between: [1, 5]
+      }
+    });
+    equal(result.length, 1);
+    return equal(result[0].get("title"), "About");
+  });
+
   test("$in operator", function() {
     var a, result;
     a = create();
@@ -301,6 +313,47 @@
       }
     });
     return equal(result.length, 2);
+  });
+
+  test("Limit", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      likes: {
+        $gt: 1
+      }
+    }, {
+      limit: 2
+    });
+    return equal(result.length, 2);
+  });
+
+  test("Offset", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      likes: {
+        $gt: 1
+      }
+    }, {
+      limit: 2,
+      offset: 2
+    });
+    return equal(result.length, 1);
+  });
+
+  test("Page", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      likes: {
+        $gt: 1
+      }
+    }, {
+      limit: 3,
+      page: 2
+    });
+    return equal(result.length, 0);
   });
 
 }).call(this);

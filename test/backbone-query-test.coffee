@@ -56,6 +56,12 @@ test "$gte operator", ->
   result = a.query likes: {$gte: 12}
   equal result.length, 2
 
+test "$between operator", ->
+  a = create()
+  result = a.query likes: {$between: [1,5]}
+  equal result.length, 1
+  equal result[0].get("title"), "About"
+
 test "$in operator", ->
   a = create()
   result = a.query title: {$in: ["Home","About"]}
@@ -129,6 +135,22 @@ test "Compound Queries", ->
   a = create()
   result = a.query $and: {likes: {$gt: 5}}, $or: {content: {$like: "PHP"},  colors: {$contains: "yellow"}}
   equal result.length, 2
+
+test "Limit", ->
+  a = create()
+  result = a.query {likes: {$gt: 1}}, {limit:2}
+  equal result.length, 2
+
+test "Offset", ->
+  a = create()
+  result = a.query {likes: {$gt: 1}}, {limit:2, offset:2}
+  equal result.length, 1
+
+test "Page", ->
+  a = create()
+  result = a.query {likes: {$gt: 1}}, {limit:3, page:2}
+  equal result.length, 0
+
 
 
 

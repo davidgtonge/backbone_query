@@ -14,10 +14,11 @@ Your collections will now have a `query` method that can be used like this:
 
 ```js
 MyCollection.query({ {featured:true}, {likes: $gt:10} )};
-// Returns all models with
+// Returns all models where the featured attribute is true and there are
+// more than 10 likes
 
 MyCollection.query({
-  // All models must match these queries
+  // Models must match all these queries
   $and:{
     title: {$like: "news"}, // Title attribute contains the string "news"
     likes: {$gt: 10}}, // Likes attribute is greater than 10
@@ -73,6 +74,14 @@ MyCollection.query({ likes: {$gt:10} });
 MyCollection.query({ likes: {$gte:10} });
 // Returns all models which have a "likes" attribute of greater than or equal to 10
 ```
+
+### $between
+To check if a value in inbetwen 2 query values use the $between operator and supply an array with the min and max value
+
+```js
+MyCollection.query({ likes: {$between:[5,15} });
+// Returns all models which have a "likes" attribute of greater than 5 and less then 15
+
 
 ### $in
 An array of possible values can be supplied using $in, a model will be returned if any of the supplied values is matched
@@ -191,6 +200,30 @@ MyCollection.query({
 //Returns models that have "News" in their title and
 //either have more than 10 likes or contain the color red.
 ```
+
+Paging
+======
+To return only a subset of the results supply an additional paging object to the query method.
+This object must contain a `limit` property and can contain either a `offset` or a `page` property.
+
+```js
+MyCollection.query({likes:{$gt:10}}, {limit:10});
+// Returns the first 10 models that have more than 10 likes
+
+MyCollection.query({likes:{$gt:10}}, {limit:10, offset:5});
+// Returns 10 models that have more than 10 likes starting
+//at the 6th model in the results
+
+MyCollection.query({likes:{$gt:10}}, {limit:10, page:2});
+// Returns 10 models that have more than 10 likes starting
+//at the 11th model in the results (page 2)
+
+
+Still Todo
+=========
+* More comprehensive tests
+* Add date comparators (check if dates can be used as is with $lt, $gt, $between)
+
 
 Author
 ======
