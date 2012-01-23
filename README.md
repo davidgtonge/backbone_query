@@ -17,8 +17,10 @@ Query API
 
 ### $equal
 Performs a strict equality test using `===`. If no operator is provided and the query value isn't a regex then `$equal` is assumed.
-```
-MyCollection.query({ title:"Test" }); // Returns all models which have a "title" attribute of "Test"
+```js
+MyCollection.query({ title:"Test" });
+// Returns all models which have a "title" attribute of "Test"
+
 MyCollection.query({ title: {$equal:"Test"} }); // Same as above
 ```
 
@@ -101,7 +103,7 @@ Multiple queries can be combined together. By default all supplied queries must 
 to specify either `$or` or `$nor` to implement alternate logic.
 
 ### $and
-```
+```js
 MyCollection.query({ $and: { title: {$like: "News"}, likes: {$gt: 10}}});
 // Returns all models that contain "News" in the title and have more than 10 likes.
 MyCollection.query({ title: {$like: "News"}, likes: {$gt: 10} }); // Same as above as $and is assumed if not supplied
