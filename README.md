@@ -1,8 +1,8 @@
 backbone-query
 ===================
 
-Adds the ability to search for models with a query api similar to MongoDB
-http://www.mongodb.org/display/DOCS/Advanced+Queries
+Adds the ability to search for models with a query api similar to
+[MongoDB](http://www.mongodb.org/display/DOCS/Advanced+Queries)
 
 Usage
 =====
