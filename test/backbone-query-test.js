@@ -199,6 +199,23 @@
     return equal(result.length, 3);
   });
 
+  test("$any operator", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      colors: {
+        $any: ["red", "blue"]
+      }
+    });
+    equal(result.length, 3);
+    result = a.query({
+      colors: {
+        $any: ["yellow", "blue"]
+      }
+    });
+    return equal(result.length, 2);
+  });
+
   test("$size operator", function() {
     var a, result;
     a = create();

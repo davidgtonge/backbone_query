@@ -38,10 +38,6 @@ MyCollection.query({
     category:{$in:["code","programming","javascript"]}}
     //Category attribute is either "code", "programming", or "javascript"
 });
-
-
-
-
 ```
 
 Query API
@@ -121,6 +117,14 @@ MyCollection.query({ colors: {$all:["red", "yellow"] } });
 // Returns all models which have "red" and "yellow" in their colors attribute.
 // A model with the attribute colors:["red","yellow","blue"] would be returned
 // But a model with the attribute colors:["red","blue"] would not be returned
+```
+
+### $any
+Assumes the model property is an array and returns models where any of the supplied values are matched.
+
+```js
+MyCollection.query({ colors: {$any:["red", "yellow"] } });
+// Returns models which have either "red" or "yellow" in their colors attribute.
 ```
 
 ### $size
@@ -229,7 +233,9 @@ Optional `sortBy` and `order` attributes can be supplied as part of an options o
 
 ```js
 MyCollection.query({title: {$like: "News"}}, {sortBy: "likes"});
-// Returns all models that contain "News" in the title, sorted according to their "likes" attribute (ascending)
+// Returns all models that contain "News" in the title,
+// sorted according to their "likes" attribute (ascending)
+
 MyCollection.query({title: {$like: "News"}}, {sortBy: "likes", order:"desc"});
 // Same as above, but "descending"
 MyCollection.query(

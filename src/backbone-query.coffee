@@ -23,7 +23,7 @@ parse_query = (raw_query) ->
 # Here we ensure that the correct query value is provided
 test_query_value = (type, value) ->
   switch type
-    when "$in","$nin","$all" then _(value).isArray()
+    when "$in","$nin","$all", "$any" then _(value).isArray()
     when "$size" then _(value).isNumber()
     when "$regex" then _(value).isRegExp()
     when "$like" then _(value).isString()
@@ -58,6 +58,10 @@ iterator = (collection, query, andOr) ->
           attr = model.get(q.key)
           if _(attr).isArray()
             _(model.get q.key).all (item) -> item in q.value
+        when "$any"
+          attr = model.get(q.key)
+          if _(attr).isArray()
+            _(model.get q.key).any (item) -> item in q.value
         when "$size" then model.get(q.key).length is q.value
         when "$exists", "$has" then model.has(q.key) is q.value
         when "$like" then model.get(q.key).indexOf(q.value) isnt -1

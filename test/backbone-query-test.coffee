@@ -91,6 +91,13 @@ test "$all operator (wrong values)", ->
   result = a.query colors: {$all: "red"}
   equal result.length, 3
 
+test "$any operator", ->
+  a = create()
+  result = a.query colors: {$any: ["red","blue"]}
+  equal result.length, 3
+
+  result = a.query colors: {$any: ["yellow","blue"]}
+  equal result.length, 2
 
 test "$size operator", ->
   a = create()

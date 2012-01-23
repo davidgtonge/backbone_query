@@ -35,6 +35,7 @@
       case "$in":
       case "$nin":
       case "$all":
+      case "$any":
         return _(value).isArray();
       case "$size":
         return _(value).isNumber();
@@ -91,6 +92,14 @@
               attr = model.get(q.key);
               if (_(attr).isArray()) {
                 return _(model.get(q.key)).all(function(item) {
+                  return __indexOf.call(q.value, item) >= 0;
+                });
+              }
+              break;
+            case "$any":
+              attr = model.get(q.key);
+              if (_(attr).isArray()) {
+                return _(model.get(q.key)).any(function(item) {
                   return __indexOf.call(q.value, item) >= 0;
                 });
               }
