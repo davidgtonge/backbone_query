@@ -18,6 +18,14 @@ MyCollection.query({ {featured:true}, {likes: $gt:10} )};
 // Returns all models where the featured attribute is true and there are
 // more than 10 likes
 
+MyCollection.query(
+    {tags: { $any: ["coffeescript", "backbone", "mvc"]}},
+    {sortBy: "likes", order: "desc", limit:10, page:2}
+);
+// Finds models that have either "coffeescript", "backbone", "mvc" in their "tags" attribute
+// Sorts these models by the "likes" attribute in descending order
+// Returns only 10 models, starting from the 11th model (page 2)
+
 MyCollection.query({
   // Models must match all these queries
   $and:{
@@ -30,6 +38,10 @@ MyCollection.query({
     category:{$in:["code","programming","javascript"]}}
     //Category attribute is either "code", "programming", or "javascript"
 });
+
+
+
+
 ```
 
 Query API
@@ -220,7 +232,10 @@ MyCollection.query({title: {$like: "News"}}, {sortBy: "likes"});
 // Returns all models that contain "News" in the title, sorted according to their "likes" attribute (ascending)
 MyCollection.query({title: {$like: "News"}}, {sortBy: "likes", order:"desc"});
 // Same as above, but "descending"
-MyCollection.query({title: {$like: "News"}}, {sortBy: function(model){ return model.get("title").charAt(1);}} );
+MyCollection.query(
+    {title: {$like: "News"}},
+    {sortBy: function(model){ return model.get("title").charAt(1);}}
+);
 // Results sorted according to 2nd character of the title attribute
 ```
 
