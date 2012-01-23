@@ -3,7 +3,7 @@
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   parse_query = function(raw_query) {
-    var key, o, query_param, type, value, _fn, _results;
+    var key, o, query_param, type, value, _results;
     _results = [];
     for (key in raw_query) {
       query_param = raw_query[key];
@@ -14,15 +14,12 @@
         o.type = "$regex";
         o.value = query_param;
       } else if (_(query_param).isObject()) {
-        _fn = function(type, value) {
-          if (test_query_value(type, value)) {
-            o.type = type;
-            return o.value = value;
-          }
-        };
         for (type in query_param) {
           value = query_param[type];
-          _fn(type, value);
+          if (test_query_value(type, value)) {
+            o.type = type;
+            o.value = value;
+          }
         }
       } else {
         o.type = "$equal";
@@ -89,9 +86,13 @@
             case "$nin":
               return _ref4 = model.get(q.key), __indexOf.call(q.value, _ref4) < 0;
             case "$all":
-              return _(model.get(q.key)).all(function(item) {
-                return __indexOf.call(q.value, item) >= 0;
-              });
+              attr = model.get(q.key);
+              if (_(attr).isArray()) {
+                return _(model.get(q.key)).all(function(item) {
+                  return __indexOf.call(q.value, item) >= 0;
+                });
+              }
+              break;
             case "$size":
               return model.get(q.key).length === q.value;
             case "$exists":

@@ -67,6 +67,11 @@ test "$in operator", ->
   result = a.query title: {$in: ["Home","About"]}
   equal result.length, 2
 
+test "$in operator with wrong query value", ->
+  a = create()
+  result = a.query title: {$in: "Home"}
+  equal result.length, 3
+
 test "$nin operator", ->
   a = create()
   result = a.query title: {$nin: ["Home","About"]}
@@ -77,6 +82,15 @@ test "$all operator", ->
   a = create()
   result = a.query colors: {$all: ["red","blue"]}
   equal result.length, 2
+
+test "$all operator (wrong values)", ->
+  a = create()
+  result = a.query title: {$all: ["red","blue"]}
+  equal result.length, 3
+
+  result = a.query colors: {$all: "red"}
+  equal result.length, 3
+
 
 test "$size operator", ->
   a = create()

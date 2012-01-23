@@ -11,10 +11,9 @@ parse_query = (raw_query) ->
   # If the query paramater is an object then extract the key and value
     else if _(query_param).isObject()
       for type, value of query_param
-        do (type, value) ->
-          if test_query_value type, value
-            o.type = type
-            o.value = value
+        if test_query_value type, value
+          o.type = type
+          o.value = value
 
     else # Default query type is $equal
       o.type = "$equal"
@@ -54,7 +53,10 @@ iterator = (collection, query, andOr) ->
         when "$between" then q.value[0] < model.get(q.key) < q.value[1]
         when "$in" then  model.get(q.key) in q.value
         when "$nin" then  model.get(q.key) not in q.value
-        when "$all" then  _(model.get q.key).all (item) -> item in q.value
+        when "$all"
+          attr = model.get(q.key)
+          if _(attr).isArray()
+            _(model.get q.key).all (item) -> item in q.value
         when "$size" then model.get(q.key).length is q.value
         when "$exists", "$has" then model.has(q.key) is q.value
         when "$like" then model.get(q.key).indexOf(q.value) isnt -1

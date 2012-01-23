@@ -148,6 +148,17 @@
     return equal(result.length, 2);
   });
 
+  test("$in operator with wrong query value", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      title: {
+        $in: "Home"
+      }
+    });
+    return equal(result.length, 3);
+  });
+
   test("$nin operator", function() {
     var a, result;
     a = create();
@@ -169,6 +180,23 @@
       }
     });
     return equal(result.length, 2);
+  });
+
+  test("$all operator (wrong values)", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      title: {
+        $all: ["red", "blue"]
+      }
+    });
+    equal(result.length, 3);
+    result = a.query({
+      colors: {
+        $all: "red"
+      }
+    });
+    return equal(result.length, 3);
   });
 
   test("$size operator", function() {
