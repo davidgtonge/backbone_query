@@ -17,7 +17,8 @@ Query API
 
 ### $equal
 Performs a strict equality test using `===`. If no operator is provided and the query value isn't a regex then `$equal` is assumed.
-```js
+
+```javascript
 MyCollection.query({ title:"Test" });
 // Returns all models which have a "title" attribute of "Test"
 
