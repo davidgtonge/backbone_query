@@ -1,3 +1,19 @@
+###
+Backbone Query - A lightweight query API for Backbone Collections
+(c)2012 - Dave Tonge
+May be freely distributed according to MIT license.
+###
+
+# Array Intersection - Helper Function
+# * Modified version of Underscore Intersection, accepts an array of arrays rather than multiple arrays
+# * Returns results that are present in each of the supplied arrays
+array_intersection = (arrays) ->
+  rest = _.rest arrays
+  _.filter _.uniq(arrays[0]), (item) ->
+    _.every rest, (other) ->
+      _.indexOf(other, item) >= 0
+
+
 # This function parses the query and converts it into an array of objects.
 # Each object has a key (model property), type (query type - $gt, $like...) and value.
 parse_query = (raw_query) ->
@@ -98,13 +114,8 @@ get_models = (collection, query) ->
       results = (for type in compound_query
         process_query[type] collection, query[type])
 
-    # We now need to find the models that are in present in all result sets
-    # As we have an unknown number of result sets, we use the reduce iterator together with underscores "intersection"
-      reduce_iterator = (memo, result) ->
-        memo = _.intersection memo, result
-
-    # Here the reduce iterator is called, passing in the first result set as the initial memo
-      _.reduce _.rest(results), reduce_iterator, results[0])
+      # We use a modified form of Underscores Intersection to find the models that appear in all the result sets
+      array_intersection results)
 
 sort_models = (models, options) ->
   # If the sortBy param is a string then we sort according to the model attribute with that string as a key

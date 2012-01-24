@@ -414,7 +414,29 @@
         }
       }
     });
-    return equal(result.length, 2);
+    equal(result.length, 2);
+    result = a.query({
+      $and: {
+        likes: {
+          $lt: 15
+        }
+      },
+      $or: {
+        content: {
+          $like: "Dummy"
+        },
+        featured: {
+          $exists: true
+        }
+      },
+      $not: {
+        colors: {
+          $contains: "yellow"
+        }
+      }
+    });
+    equal(result.length, 1);
+    return equal(result[0].get("title"), "About");
   });
 
   test("Limit", function() {

@@ -40,6 +40,19 @@ MyCollection.query({
 });
 ```
 
+Or if CoffeeScript is your thing (the source is written in CoffeeScript), try this:
+
+```coffeescript
+MyCollection.query
+  $and:
+    likes: $lt: 15
+  $or:
+    content: $like: "news"
+    featured: $exists: true
+  $not:
+    colors: $contains: "yellow"
+```
+
 Query API
 ===
 

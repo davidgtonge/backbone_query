@@ -1,6 +1,23 @@
+
+/*
+Backbone Query - A lightweight query API for Backbone Collections
+(c)2012 - Dave Tonge
+May be freely distributed according to MIT license.
+*/
+
 (function() {
-  var and_iterator, get_models, iterator, or_iterator, page_models, parse_query, process_query, sort_models, test_query_value,
+  var and_iterator, array_intersection, get_models, iterator, or_iterator, page_models, parse_query, process_query, sort_models, test_query_value,
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
+  array_intersection = function(arrays) {
+    var rest;
+    rest = _.rest(arrays);
+    return _.filter(_.uniq(arrays[0]), function(item) {
+      return _.every(rest, function(other) {
+        return _.indexOf(other, item) >= 0;
+      });
+    });
+  };
 
   parse_query = function(raw_query) {
     var key, o, query_param, type, value, _results;
@@ -146,7 +163,7 @@
   };
 
   get_models = function(collection, query) {
-    var compound_query, reduce_iterator, results, type;
+    var compound_query, results, type;
     compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value();
     switch (compound_query.length) {
       case 0:
@@ -164,10 +181,7 @@
           }
           return _results;
         })();
-        reduce_iterator = function(memo, result) {
-          return memo = _.intersection(memo, result);
-        };
-        return _.reduce(_.rest(results), reduce_iterator, results[0]);
+        return array_intersection(results);
     }
   };
 

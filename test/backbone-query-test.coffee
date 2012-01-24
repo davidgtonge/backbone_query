@@ -182,6 +182,18 @@ test "Compound Queries", ->
   result = a.query $and: {likes: {$gt: 5}}, $or: {content: {$like: "PHP"},  colors: {$contains: "yellow"}}
   equal result.length, 2
 
+  result = a.query
+    $and:
+      likes: $lt: 15
+    $or:
+      content: $like: "Dummy"
+      featured:$exists:true
+    $not:
+      colors: $contains: "yellow"
+  equal result.length, 1
+  equal result[0].get("title"), "About"
+
+
 test "Limit", ->
   a = create()
   result = a.query {likes: {$gt: 1}}, {limit:2}
