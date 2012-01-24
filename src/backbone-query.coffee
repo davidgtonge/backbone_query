@@ -11,6 +11,7 @@ parse_query = (raw_query) ->
   # If the query paramater is an object then extract the key and value
     else if _(query_param).isObject()
       for type, value of query_param
+        # Before adding the query, its value is checked to make sure it is the right type
         if test_query_value type, value
           o.type = type
           o.value = value
@@ -38,35 +39,33 @@ iterator = (collection, query, andOr) ->
   collection.filter (model) ->
     # For each model in the collection we iterate through the supplied queries
     for q in parsed_query
+      attr = model.get(q.key)
       # If the query is an "or" query than as soon as a match is found we return "true"
       # Whereas if the query is an "and" query then we return "false" as soon as a match isn't found.
       return andOr if andOr is (switch q.type
-        when "$equal" then model.get(q.key) is q.value
+        when "$equal" then attr is q.value
         when "$contains"
           #For this method we need to check that the model attribute is an array before we attempt to loop through it
-          attr = model.get(q.key)
           if _(attr).isArray() then (q.value in attr) else false
-        when "$ne" then model.get(q.key) isnt q.value
-        when "$lt" then model.get(q.key) < q.value
-        when "$gt" then model.get(q.key) > q.value
-        when "$lte" then model.get(q.key) <= q.value
-        when "$gte" then model.get(q.key) >= q.value
-        when "$between" then q.value[0] < model.get(q.key) < q.value[1]
-        when "$in" then  model.get(q.key) in q.value
-        when "$nin" then  model.get(q.key) not in q.value
+        when "$ne" then attr isnt q.value
+        when "$lt" then attr < q.value
+        when "$gt" then attr > q.value
+        when "$lte" then attr <= q.value
+        when "$gte" then attr >= q.value
+        when "$between" then q.value[0] < attr < q.value[1]
+        when "$in" then  attr in q.value
+        when "$nin" then  attr not in q.value
         when "$all"
-          attr = model.get(q.key)
           if _(attr).isArray()
             _(model.get q.key).all (item) -> item in q.value
         when "$any"
-          attr = model.get(q.key)
           if _(attr).isArray()
             _(model.get q.key).any (item) -> item in q.value
-        when "$size" then model.get(q.key).length is q.value
+        when "$size" then attr.length is q.value
         when "$exists", "$has" then model.has(q.key) is q.value
-        when "$like" then model.get(q.key).indexOf(q.value) isnt -1
-        when "$regex" then q.value.test model.get(q.key)
-        when "$cb" then q.value model.get(q.key))
+        when "$like" then attr.indexOf(q.value) isnt -1
+        when "$regex" then q.value.test attr
+        when "$cb" then q.value attr)
     # For an "or" query, if all the queries are false, then we return false
     # For an "and" query, if all the queries are true, then we return true
     not andOr
@@ -108,24 +107,28 @@ get_models = (collection, query) ->
       _.reduce _.rest(results), reduce_iterator, results[0])
 
 sort_models = (models, options) ->
+  # If the sortBy param is a string then we sort according to the model attribute with that string as a key
   if _(options.sortBy).isString()
     models = _(models).sortBy (model) -> model.get(options.sortBy)
+  # If a function is supplied then it is passed directly to the sortBy iterator
   else if _(options.sortBy).isFunction()
     models = _(models).sortBy(options.sortBy)
 
+  # If there is an order property of "desc" then the results can be reversed
+  # (sortBy provides result in ascending order by default)
   if options.order is "desc" then models = models.reverse()
-
+  # The sorted models are returned
   models
 
 page_models = (models, options) ->
-  # Expects object in the form: {limit: num, offset: num or page: num
+  # Expects object in the form: {limit: num, offset: num or page: num}
   if options.offset then start = options.offset
   else if options.page then start = (options.page - 1) * options.limit
   else start = 0
 
   end = start + options.limit
+  # The results are sliced according to the calculated start and end params
   models[start...end]
-
 
 
 Backbone.QueryCollection = Backbone.Collection.extend
