@@ -37,7 +37,7 @@ parse_query = (raw_query) ->
       o.value = query_param
     o)
 
-# Here we ensure that the correct query value is provided
+# Tests query value, to ensure that it is of the correct type
 test_query_value = (type, value) ->
   switch type
     when "$in","$nin","$all", "$any" then _(value).isArray()
@@ -81,7 +81,7 @@ iterator = (collection, query, andOr) ->
         when "$exists", "$has" then model.has(q.key) is q.value
         when "$like" then attr.indexOf(q.value) isnt -1
         when "$regex" then q.value.test attr
-        when "$cb" then q.value attr)
+        when "$cb" then q.value.call model, attr)
     # For an "or" query, if all the queries are false, then we return false
     # For an "and" query, if all the queries are true, then we return true
     not andOr
@@ -96,7 +96,22 @@ process_query =
   $nor: (collection, query) -> _.difference collection.models, (or_iterator collection, query)
   $not: (collection, query) -> _.difference collection.models, (and_iterator collection, query)
 
+get_cache = (collection, query, options) ->
+  # Convert the query to a string to use as a key in the cache
+  query_string = JSON.stringify query
+  # Create cache if doesn't exist
+  cache = collection._query_cache ?= {}
+  # Retrieve cached results
+  models = cache[query_string]
+  # If no results are retrieved then use the get_models method and cache the result
+  unless models
+    models = get_sorted_models collection, query, options
+    cache[query_string] = models
+  # Return the results
+  models
+
 get_models = (collection, query) ->
+
   # We iterate through the query keys to check for any of the compound methods
   compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value()
 
@@ -116,6 +131,11 @@ get_models = (collection, query) ->
 
       # We use a modified form of Underscores Intersection to find the models that appear in all the result sets
       array_intersection results)
+
+get_sorted_models = (collection, query, options) ->
+  models = get_models collection, query
+  if options.sortBy then models = sort_models models, options
+  models
 
 sort_models = (models, options) ->
   # If the sortBy param is a string then we sort according to the model attribute with that string as a key
@@ -145,16 +165,18 @@ page_models = (models, options) ->
 Backbone.QueryCollection = Backbone.Collection.extend
 
   # The main query method
-  query: (query, options = false) ->
+  query: (query, options = {}) ->
 
-    # Retrieve the match models using the supplied query
-    models = get_models @, query
+    # Retrieve matching models using the supplied query
+    if options.cache
+      models = get_cache @, query, options
+    else
+      models = get_sorted_models @, query, options
 
-    if _(options).isObject()
-      # If a sortBy param is specified then sort the results
-      if options.sortBy then models = sort_models models, options
-      # If a limit param is specified than slice the results
-      if options.limit then models = page_models models, options
+    # If a limit param is specified than slice the results
+    if options.limit then models = page_models models, options
 
     # Return the results
     models
+
+  reset_query_cache: -> @_query_cache = {}

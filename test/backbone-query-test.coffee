@@ -154,6 +154,13 @@ test "$cb - callback", ->
   equal result.length, 1
   equal result[0].get("title"), "Contact"
 
+test "$cb - callback - checking 'this' is the model", ->
+  a = create()
+  result = a.query title:
+    $cb: (attr) -> @get("title") is "Home"
+  equal result.length, 1
+  equal result[0].get("title"), "Home"
+
 test "$and operator", ->
   a = create()
   result = a.query likes: {$gt: 5}, colors: {$contains: "yellow"}
@@ -194,6 +201,7 @@ test "Compound Queries", ->
   equal result[0].get("title"), "About"
 
 
+
 test "Limit", ->
   a = create()
   result = a.query {likes: {$gt: 1}}, {limit:2}
@@ -232,3 +240,52 @@ test "Sorder by function", ->
   equal result[2].get("title"), "About"
   equal result[0].get("title"), "Home"
   equal result[1].get("title"), "Contact"
+
+test "cache", ->
+  a = create()
+  result = a.query {likes: {$gt: 1}}, {cache:true, sortBy: (model) -> model.get("title").charAt(2) }
+  equal result.length, 3
+  result = a.query {likes: {$gt: 1}}, {cache:true, sortBy: (model) -> model.get("title").charAt(2) }
+  equal result.length, 3
+  a.remove result[0]
+  result = a.query {likes: {$gt: 1}}, {sortBy: (model) -> model.get("title").charAt(2) }
+  equal result.length, 2
+  result = a.query {likes: {$gt: 1}}, {cache:true, sortBy: (model) -> model.get("title").charAt(2) }
+  equal result.length, 3
+
+test "cache with multiple collections", ->
+  a = create()
+  b = create()
+  b.remove b.at(0)
+  equal b.length, 2
+  equal a.length, 3
+
+  a_result = a.query {likes: {$gt: 1}}, {cache:true, sortBy: (model) -> model.get("title").charAt(2) }
+  equal a_result.length, 3
+  b_result = b.query {likes: {$gt: 1}}, {cache:true, sortBy: (model) -> model.get("title").charAt(2) }
+  equal b_result.length, 2
+
+  a.remove a_result[0]
+  b.remove b_result[0]
+
+  a_result = a.query {likes: {$gt: 1}}, {cache:true, sortBy: (model) -> model.get("title").charAt(2) }
+  equal a_result.length, 3
+  equal a.length, 2
+  b_result = b.query {likes: {$gt: 1}}, {cache:true, sortBy: (model) -> model.get("title").charAt(2) }
+  equal b_result.length, 2
+  equal b.length, 1
+
+  a.reset_query_cache()
+  a_result = a.query {likes: {$gt: 1}}, {cache:true, sortBy: (model) -> model.get("title").charAt(2) }
+  equal a_result.length, 2
+  equal a.length, 2
+
+  b_result = b.query {likes: {$gt: 1}}, {cache:true, sortBy: (model) -> model.get("title").charAt(2) }
+  equal b_result.length, 2
+  equal b.length, 1
+
+
+
+
+
+

@@ -6,7 +6,7 @@ May be freely distributed according to MIT license.
 */
 
 (function() {
-  var and_iterator, array_intersection, get_models, iterator, or_iterator, page_models, parse_query, process_query, sort_models, test_query_value,
+  var and_iterator, array_intersection, get_cache, get_models, get_sorted_models, iterator, or_iterator, page_models, parse_query, process_query, sort_models, test_query_value,
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   array_intersection = function(arrays) {
@@ -129,7 +129,7 @@ May be freely distributed according to MIT license.
             case "$regex":
               return q.value.test(attr);
             case "$cb":
-              return q.value(attr);
+              return q.value.call(model, attr);
           }
         })())) {
           return andOr;
@@ -162,6 +162,18 @@ May be freely distributed according to MIT license.
     }
   };
 
+  get_cache = function(collection, query, options) {
+    var cache, models, query_string, _ref;
+    query_string = JSON.stringify(query);
+    cache = (_ref = collection._query_cache) != null ? _ref : collection._query_cache = {};
+    models = cache[query_string];
+    if (!models) {
+      models = get_sorted_models(collection, query, options);
+      cache[query_string] = models;
+    }
+    return models;
+  };
+
   get_models = function(collection, query) {
     var compound_query, results, type;
     compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value();
@@ -183,6 +195,13 @@ May be freely distributed according to MIT license.
         })();
         return array_intersection(results);
     }
+  };
+
+  get_sorted_models = function(collection, query, options) {
+    var models;
+    models = get_models(collection, query);
+    if (options.sortBy) models = sort_models(models, options);
+    return models;
   };
 
   sort_models = function(models, options) {
@@ -213,13 +232,17 @@ May be freely distributed according to MIT license.
   Backbone.QueryCollection = Backbone.Collection.extend({
     query: function(query, options) {
       var models;
-      if (options == null) options = false;
-      models = get_models(this, query);
-      if (_(options).isObject()) {
-        if (options.sortBy) models = sort_models(models, options);
-        if (options.limit) models = page_models(models, options);
+      if (options == null) options = {};
+      if (options.cache) {
+        models = get_cache(this, query, options);
+      } else {
+        models = get_sorted_models(this, query, options);
       }
+      if (options.limit) models = page_models(models, options);
       return models;
+    },
+    reset_query_cache: function() {
+      return this._query_cache = {};
     }
   });
 

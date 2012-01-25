@@ -1,14 +1,16 @@
 backbone-query
 ===================
 
-Adds the ability to search for models with a query api similar to
+A lightweight (< 3KB minified) utility for Backbone projects.
+Adds the ability to search for models with a Query API similar to
 [MongoDB](http://www.mongodb.org/display/DOCS/Advanced+Queries)
-This is quite a new project and Pull requests are welcome!
+Please report any bugs, feature requests in the issue tracker.
+Pull requests are welcome!
 
 Usage
 =====
 
-To install, include the `js/backbone-query.js` file in your HTML page, after Backbone and it's dependencies.
+To install, include the `js/backbone-query.min.js` file in your HTML page, after Backbone and it's dependencies.
 
 Then extend your collections from Backbone.QueryCollection rather than from Backbone.Collection.
 Your collections will now have a `query` method that can be used like this:
@@ -20,11 +22,11 @@ MyCollection.query({ {featured:true}, {likes: $gt:10} )};
 
 MyCollection.query(
     {tags: { $any: ["coffeescript", "backbone", "mvc"]}},
-    {sortBy: "likes", order: "desc", limit:10, page:2}
+    {sortBy: "likes", order: "desc", limit:10, page:2, cache:true}
 );
 // Finds models that have either "coffeescript", "backbone", "mvc" in their "tags" attribute
 // Sorts these models by the "likes" attribute in descending order
-// Returns only 10 models, starting from the 11th model (page 2)
+// Caches the results and returns only 10 models, starting from the 11th model (page 2)
 
 MyCollection.query({
   // Models must match all these queries
@@ -179,12 +181,21 @@ MyCollection.query({ content: /coffeescript/gi });
 ```
 
 ### $cb
-A callback function can be supplied as a test. The callback will receive the attribute and should return either true or false
+A callback function can be supplied as a test. The callback will receive the attribute and should return either true or false.
+`this` will be set to the current model, this can help with tests against computed properties
 
 ```js
 MyCollection.query({ title: {$cb: function(attr){ return attr.charAt(0) === "c";}} });
 // Returns all models that have a title attribute that starts with "c"
+
+MyCollection.query({ computed_test: {$cb: function(){ return this.computed_property() > 10;}} });
+// Returns all models where the computed_property method returns a value greater than 10.
 ```
+
+For callbacks that use `this` rather than the model attribute, the key name supplied is arbitrary and has no
+effect on the results. If the only test you were performing was like the above test it would make more sense
+to simply use `MyCollection.filter`. However if you are performing other tests or are using the paging / sorting /
+caching options of backbone query, then this functionality is useful.
 
 Combined Queries
 ================
@@ -276,6 +287,36 @@ MyCollection.query({likes:{$gt:10}}, {limit:10, page:2});
 // Returns 10 models that have more than 10 likes starting
 //at the 11th model in the results (page 2)
 ```
+
+Caching Results
+================
+To enable caching set the cache flag to true in the options object. This can greatly improve performance when paging
+through results as the unpaged results will be saved. This options is not enabled by default as it is not desirable when
+if models are changed, added to, or removed from the collection, then the query cache will be out of date. If you know
+that your data is static and won't change then caching can be enabled without any problems.
+If your data is dynamic (as in most Backbone Apps) then a helper cache reset method is provided:
+`reset_query_cache`. This method should be bound to your collections change, add and remove events
+(depending on how your data can be changed).
+
+Cache will be saved in a `_query_cache` property on each collection where a cache query is performed.
+
+```js
+MyCollection.query({likes:{$gt:10}}, {limit:10, page:1, cache:true});
+//The first query will operate as normal and return the first page of results
+MyCollection.query({likes:{$gt:10}}, {limit:10, page:2, cache:true});
+//The second query has an identical query object to the first query, so therefore the results will be retrieved
+//from the cache, before the paging paramaters are applied.
+
+// Binding the reset_query_cache method
+var MyCollection = Backbone.QueryCollection.extend({
+    initialize: function(){
+        this.bind("change", this.reset_query_cache, this);
+    }
+});
+
+
+```
+
 
 Still Todo
 =========
