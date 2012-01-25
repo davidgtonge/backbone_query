@@ -289,6 +289,48 @@ MyCollection.query({likes:{$gt:10}}, {limit:10, page:2});
 //at the 11th model in the results (page 2)
 ```
 
+When using the paging functionality, you will normally need to know the number of pages so that you can render
+the correct interface for the user. Backbone Query can send the number of pages of results to a supplied callback.
+The callback should be passed as a `pager` property on the options object. This callback will also receive the sliced
+models as a second variable.
+
+Here is a coffeescript example of a simple paging setup using the pager callback option:
+
+```coffeescript
+class MyView extends Backbone.View
+    initialize: ->
+        @template = -> #templating setup here
+
+    events:
+        "click .page": "change_page"
+
+    query_collection: (page = 1) ->
+        #Collection should be passed in when the view is instantiated
+        @collection.query {category:"javascript"}, {limit:5, page:page, pager:@render_pages}
+
+    change_page: (e) =>
+        page_number = $(e.target).data('page_number')
+        @query_collection page_number
+
+    render_pages: (total_pages, results) =>
+        content = @template results
+        pages = [1..total_pages]
+        nav = """
+        <nav>
+            <span>Total Pages: #{total_pages}</span>
+        """
+        for page in pages
+          nav += "<a href='#' data-page_number='#{page}'>#{page}</a>"
+
+        nav += "</nav>"
+
+        @$el.html content + nav
+
+    render: => @query_collection()
+
+```
+
+
 Caching Results
 ================
 To enable caching set the cache flag to true in the options object. This can greatly improve performance when paging
@@ -317,12 +359,6 @@ var MyCollection = Backbone.QueryCollection.extend({
 
 
 ```
-
-
-Still Todo
-=========
-* More comprehensive tests
-* Add date comparators (check if dates can be used as is with $lt, $gt, $between)
 
 
 Author

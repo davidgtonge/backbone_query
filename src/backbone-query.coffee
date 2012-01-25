@@ -157,14 +157,23 @@ sort_models = (models, options) ->
 
 # Slices the results set according to the supplied options
 page_models = (models, options) ->
-  # Expects object in the form: {limit: num, offset: num or page: num}
+  # Expects object in the form: {limit: num, offset: num,  page: num, pager:callback}
   if options.offset then start = options.offset
   else if options.page then start = (options.page - 1) * options.limit
   else start = 0
 
   end = start + options.limit
+
   # The results are sliced according to the calculated start and end params
-  models[start...end]
+  sliced_models = models[start...end]
+
+  if options.pager and _.isFunction(options.pager)
+    total_pages = Math.ceil (models.length / options.limit)
+    options.pager total_pages, sliced_models
+
+  sliced_models
+
+
 
 
 Backbone.QueryCollection = Backbone.Collection.extend

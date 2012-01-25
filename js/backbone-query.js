@@ -217,7 +217,7 @@ May be freely distributed according to MIT license.
   };
 
   page_models = function(models, options) {
-    var end, start;
+    var end, sliced_models, start, total_pages;
     if (options.offset) {
       start = options.offset;
     } else if (options.page) {
@@ -226,7 +226,12 @@ May be freely distributed according to MIT license.
       start = 0;
     }
     end = start + options.limit;
-    return models.slice(start, end);
+    sliced_models = models.slice(start, end);
+    if (options.pager && _.isFunction(options.pager)) {
+      total_pages = Math.ceil(models.length / options.limit);
+      options.pager(total_pages, sliced_models);
+    }
+    return sliced_models;
   };
 
   Backbone.QueryCollection = Backbone.Collection.extend({
