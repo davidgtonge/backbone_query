@@ -15,24 +15,24 @@ array_intersection = (arrays) ->
 
 
 # This function parses the query and converts it into an array of objects.
-# Each object has a key (model property), type (query type - $gt, $like...) and value.
+# Each object has a key (model property), type (query type - $gt, $like...) and value (mixed).
 parse_query = (raw_query) ->
   (for key, query_param of raw_query
     o = {key}
 
-    # First we test if the param is a regular expression
+    # Test for Regexs as they can be supplied without an operator
     if _.isRegExp(query_param)
       o.type = "$regex"
       o.value = query_param
-  # If the query paramater is an object then extract the key and value
+    # If the query paramater is an object then extract the key and value
     else if _(query_param).isObject()
       for type, value of query_param
         # Before adding the query, its value is checked to make sure it is the right type
         if test_query_value type, value
           o.type = type
           o.value = value
-
-    else # Default query type is $equal
+    # If the query_param is not an object or a regexp then revert to the default operator: $equal
+    else
       o.type = "$equal"
       o.value = query_param
     o)
@@ -48,12 +48,12 @@ test_query_value = (type, value) ->
     when "$cb" then _(value).isFunction()
     else true
 
-
+# The main iterator that actually applies the query
 iterator = (collection, query, andOr) ->
   parsed_query = parse_query query
-  # We use the collections filter method to iterate through the model's collections
+  # The collections filter method is used to iterate through each model in the collection
   collection.filter (model) ->
-    # For each model in the collection we iterate through the supplied queries
+    # For each model in the collection, iterate through the supplied queries
     for q in parsed_query
       attr = model.get(q.key)
       # If the query is an "or" query than as soon as a match is found we return "true"
@@ -61,7 +61,7 @@ iterator = (collection, query, andOr) ->
       return andOr if andOr is (switch q.type
         when "$equal" then attr is q.value
         when "$contains"
-          #For this method we need to check that the model attribute is an array before we attempt to loop through it
+          #For this method the model attribute is confirmed to be an array before looping through it
           if _(attr).isArray() then (q.value in attr) else false
         when "$ne" then attr isnt q.value
         when "$lt" then attr < q.value
@@ -72,9 +72,11 @@ iterator = (collection, query, andOr) ->
         when "$in" then  attr in q.value
         when "$nin" then  attr not in q.value
         when "$all"
+          #For this method the model attribute is confirmed to be an array before looping through it
           if _(attr).isArray()
             _(model.get q.key).all (item) -> item in q.value
         when "$any"
+          #For this method the model attribute is confirmed to be an array before looping through it
           if _(attr).isArray()
             _(model.get q.key).any (item) -> item in q.value
         when "$size" then attr.length is q.value
@@ -112,31 +114,33 @@ get_cache = (collection, query, options) ->
 
 get_models = (collection, query) ->
 
-  # We iterate through the query keys to check for any of the compound methods
+  # Iterate through the query keys to check for any of the compound methods
   compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value()
 
   (switch compound_query.length
-    # If no compound methods are found we use the "and" iterator
+    # If no compound methods are found then use the "and" iterator
     when 0 then process_query.$and collection, query
 
-    # If only 1 compound method we invoke just that method
+    # If only 1 compound method then invoke just that method
     when 1
       type = compound_query[0]
       process_query[type] collection, query[type]
 
-    # If more than 1 method is found, we process each of the methods
+    # If more than 1 method is found, process each of the methods
     else
       results = (for type in compound_query
         process_query[type] collection, query[type])
 
-      # We use a modified form of Underscores Intersection to find the models that appear in all the result sets
+      # A modified form of Underscores Intersection is used to find the models that appear in all the result sets
       array_intersection results)
 
+# Gets the results and optionally sorts them
 get_sorted_models = (collection, query, options) ->
   models = get_models collection, query
   if options.sortBy then models = sort_models models, options
   models
 
+# Sorts models either be a model attribute or with a callback
 sort_models = (models, options) ->
   # If the sortBy param is a string then we sort according to the model attribute with that string as a key
   if _(options.sortBy).isString()
@@ -151,6 +155,7 @@ sort_models = (models, options) ->
   # The sorted models are returned
   models
 
+# Slices the results set according to the supplied options
 page_models = (models, options) ->
   # Expects object in the form: {limit: num, offset: num or page: num}
   if options.offset then start = options.offset
@@ -179,4 +184,6 @@ Backbone.QueryCollection = Backbone.Collection.extend
     # Return the results
     models
 
+  # Helper method to reset the query cache
+  # Defined as a separate method to make it easy to bind to collection's change/add/remove events
   reset_query_cache: -> @_query_cache = {}

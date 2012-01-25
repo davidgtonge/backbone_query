@@ -143,7 +143,8 @@ MyCollection.query({ colors: {$any:["red", "yellow"] } });
 ```
 
 ### $size
-Assumes the model property is an array and only returns models the model property's length matches the supplied values
+Assumes the model property has a length (i.e. is either an array or a string).
+Only returns models the model property's length matches the supplied values
 
 ```js
 MyCollection.query({ colors: {$size:2 } });
@@ -291,8 +292,8 @@ MyCollection.query({likes:{$gt:10}}, {limit:10, page:2});
 Caching Results
 ================
 To enable caching set the cache flag to true in the options object. This can greatly improve performance when paging
-through results as the unpaged results will be saved. This options is not enabled by default as it is not desirable when
-if models are changed, added to, or removed from the collection, then the query cache will be out of date. If you know
+through results as the unpaged results will be saved. This options is not enabled by default as if models are changed,
+added to, or removed from the collection, then the query cache will be out of date. If you know
 that your data is static and won't change then caching can be enabled without any problems.
 If your data is dynamic (as in most Backbone Apps) then a helper cache reset method is provided:
 `reset_query_cache`. This method should be bound to your collections change, add and remove events
