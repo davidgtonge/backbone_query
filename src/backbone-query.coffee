@@ -48,6 +48,14 @@ test_query_value = (type, value) ->
     when "$cb" then _(value).isFunction()
     else true
 
+test_attr = (type, value) ->
+  switch type
+    when "$like", "$regex" then _(value).isString()
+    when "$contains", "$all", "$any" then _(value).isArray()
+    when "$size" then _(value).isArray() or _(value).isString()
+    when "$in", "$nin" then value?
+    else true
+
 # The main iterator that actually applies the query
 iterator = (collection, query, andOr) ->
   parsed_query = parse_query query
@@ -55,35 +63,33 @@ iterator = (collection, query, andOr) ->
   collection.filter (model) ->
     # For each model in the collection, iterate through the supplied queries
     for q in parsed_query
+      # Retrieve the attribute value from the model
       attr = model.get(q.key)
+      # Check if the attribute value is the right type (some operators need a string, or an array)
+      test = test_attr(q.type, attr)
+      if test then test = (switch q.type
+        when "$equal"     then attr is q.value
+        when "$contains"  then q.value in attr
+        when "$ne"        then attr isnt q.value
+        when "$lt"        then attr < q.value
+        when "$gt"        then attr > q.value
+        when "$lte"       then attr <= q.value
+        when "$gte"       then attr >= q.value
+        when "$between"   then q.value[0] < attr < q.value[1]
+        when "$in"        then attr in q.value
+        when "$nin"       then attr not in q.value
+        when "$all"       then _(model.get q.key).all (item) -> item in q.value
+        when "$any"       then _(model.get q.key).any (item) -> item in q.value
+        when "$size"      then attr.length is q.value
+        when "$exists", "$has" then model.has(q.key) is q.value
+        when "$like"      then attr.indexOf(q.value) isnt -1
+        when "$regex"     then q.value.test attr
+        when "$cb"        then q.value.call model, attr)
+
       # If the query is an "or" query than as soon as a match is found we return "true"
       # Whereas if the query is an "and" query then we return "false" as soon as a match isn't found.
-      return andOr if andOr is (switch q.type
-        when "$equal" then attr is q.value
-        when "$contains"
-          #For this method the model attribute is confirmed to be an array before looping through it
-          if _(attr).isArray() then (q.value in attr) else false
-        when "$ne" then attr isnt q.value
-        when "$lt" then attr < q.value
-        when "$gt" then attr > q.value
-        when "$lte" then attr <= q.value
-        when "$gte" then attr >= q.value
-        when "$between" then q.value[0] < attr < q.value[1]
-        when "$in" then  attr in q.value
-        when "$nin" then  attr not in q.value
-        when "$all"
-          #For this method the model attribute is confirmed to be an array before looping through it
-          if _(attr).isArray()
-            _(model.get q.key).all (item) -> item in q.value
-        when "$any"
-          #For this method the model attribute is confirmed to be an array before looping through it
-          if _(attr).isArray()
-            _(model.get q.key).any (item) -> item in q.value
-        when "$size" then attr.length is q.value
-        when "$exists", "$has" then model.has(q.key) is q.value
-        when "$like" then attr.indexOf(q.value) isnt -1
-        when "$regex" then q.value.test attr
-        when "$cb" then q.value.call model, attr)
+      return andOr if andOr is test
+
     # For an "or" query, if all the queries are false, then we return false
     # For an "and" query, if all the queries are true, then we return true
     not andOr

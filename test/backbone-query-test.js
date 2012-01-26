@@ -190,7 +190,7 @@
         $all: ["red", "blue"]
       }
     });
-    equal(result.length, 3);
+    equal(result.length, 0);
     result = a.query({
       colors: {
         $all: "red"
@@ -674,6 +674,59 @@
     });
     equal(b_result.length, 2);
     return equal(b.length, 1);
+  });
+
+  test("null attribute with various operators", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      wrong_key: {
+        $like: "test"
+      }
+    });
+    equal(result.length, 0);
+    result = a.query({
+      wrong_key: {
+        $regex: /test/
+      }
+    });
+    equal(result.length, 0);
+    result = a.query({
+      wrong_key: {
+        $contains: "test"
+      }
+    });
+    equal(result.length, 0);
+    result = a.query({
+      wrong_key: {
+        $all: [12, 23]
+      }
+    });
+    equal(result.length, 0);
+    result = a.query({
+      wrong_key: {
+        $any: [12, 23]
+      }
+    });
+    equal(result.length, 0);
+    result = a.query({
+      wrong_key: {
+        $size: 10
+      }
+    });
+    equal(result.length, 0);
+    result = a.query({
+      wrong_key: {
+        $in: [12, 23]
+      }
+    });
+    equal(result.length, 0);
+    result = a.query({
+      wrong_key: {
+        $nin: [12, 23]
+      }
+    });
+    return equal(result.length, 0);
   });
 
 }).call(this);

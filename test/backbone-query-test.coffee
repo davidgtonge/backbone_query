@@ -86,7 +86,7 @@ test "$all operator", ->
 test "$all operator (wrong values)", ->
   a = create()
   result = a.query title: {$all: ["red","blue"]}
-  equal result.length, 3
+  equal result.length, 0
 
   result = a.query colors: {$all: "red"}
   equal result.length, 3
@@ -285,6 +285,24 @@ test "cache with multiple collections", ->
   equal b.length, 1
 
 
+test "null attribute with various operators", ->
+  a = create()
+  result = a.query wrong_key: {$like: "test"}
+  equal result.length, 0
+  result = a.query wrong_key: {$regex: /test/}
+  equal result.length, 0
+  result = a.query wrong_key: {$contains: "test"}
+  equal result.length, 0
+  result = a.query wrong_key: {$all: [12,23]}
+  equal result.length, 0
+  result = a.query wrong_key: {$any: [12,23]}
+  equal result.length, 0
+  result = a.query wrong_key: {$size: 10}
+  equal result.length, 0
+  result = a.query wrong_key: {$in: [12,23]}
+  equal result.length, 0
+  result = a.query wrong_key: {$nin: [12,23]}
+  equal result.length, 0
 
 
 

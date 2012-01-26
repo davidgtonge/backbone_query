@@ -6,7 +6,7 @@ May be freely distributed according to MIT license.
 */
 
 (function() {
-  var and_iterator, array_intersection, get_cache, get_models, get_sorted_models, iterator, or_iterator, page_models, parse_query, process_query, sort_models, test_query_value,
+  var and_iterator, array_intersection, get_cache, get_models, get_sorted_models, iterator, or_iterator, page_models, parse_query, process_query, sort_models, test_attr, test_query_value,
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   array_intersection = function(arrays) {
@@ -69,71 +69,81 @@ May be freely distributed according to MIT license.
     }
   };
 
+  test_attr = function(type, value) {
+    switch (type) {
+      case "$like":
+      case "$regex":
+        return _(value).isString();
+      case "$contains":
+      case "$all":
+      case "$any":
+        return _(value).isArray();
+      case "$size":
+        return _(value).isArray() || _(value).isString();
+      case "$in":
+      case "$nin":
+        return value != null;
+      default:
+        return true;
+    }
+  };
+
   iterator = function(collection, query, andOr) {
     var parsed_query;
     parsed_query = parse_query(query);
     return collection.filter(function(model) {
-      var attr, q, _i, _len;
+      var attr, q, test, _i, _len;
       for (_i = 0, _len = parsed_query.length; _i < _len; _i++) {
         q = parsed_query[_i];
         attr = model.get(q.key);
-        if (andOr === ((function() {
-          var _ref;
-          switch (q.type) {
-            case "$equal":
-              return attr === q.value;
-            case "$contains":
-              if (_(attr).isArray()) {
+        test = test_attr(q.type, attr);
+        if (test) {
+          test = ((function() {
+            var _ref;
+            switch (q.type) {
+              case "$equal":
+                return attr === q.value;
+              case "$contains":
                 return _ref = q.value, __indexOf.call(attr, _ref) >= 0;
-              } else {
-                return false;
-              }
-              break;
-            case "$ne":
-              return attr !== q.value;
-            case "$lt":
-              return attr < q.value;
-            case "$gt":
-              return attr > q.value;
-            case "$lte":
-              return attr <= q.value;
-            case "$gte":
-              return attr >= q.value;
-            case "$between":
-              return (q.value[0] < attr && attr < q.value[1]);
-            case "$in":
-              return __indexOf.call(q.value, attr) >= 0;
-            case "$nin":
-              return __indexOf.call(q.value, attr) < 0;
-            case "$all":
-              if (_(attr).isArray()) {
+              case "$ne":
+                return attr !== q.value;
+              case "$lt":
+                return attr < q.value;
+              case "$gt":
+                return attr > q.value;
+              case "$lte":
+                return attr <= q.value;
+              case "$gte":
+                return attr >= q.value;
+              case "$between":
+                return (q.value[0] < attr && attr < q.value[1]);
+              case "$in":
+                return __indexOf.call(q.value, attr) >= 0;
+              case "$nin":
+                return __indexOf.call(q.value, attr) < 0;
+              case "$all":
                 return _(model.get(q.key)).all(function(item) {
                   return __indexOf.call(q.value, item) >= 0;
                 });
-              }
-              break;
-            case "$any":
-              if (_(attr).isArray()) {
+              case "$any":
                 return _(model.get(q.key)).any(function(item) {
                   return __indexOf.call(q.value, item) >= 0;
                 });
-              }
-              break;
-            case "$size":
-              return attr.length === q.value;
-            case "$exists":
-            case "$has":
-              return model.has(q.key) === q.value;
-            case "$like":
-              return attr.indexOf(q.value) !== -1;
-            case "$regex":
-              return q.value.test(attr);
-            case "$cb":
-              return q.value.call(model, attr);
-          }
-        })())) {
-          return andOr;
+              case "$size":
+                return attr.length === q.value;
+              case "$exists":
+              case "$has":
+                return model.has(q.key) === q.value;
+              case "$like":
+                return attr.indexOf(q.value) !== -1;
+              case "$regex":
+                return q.value.test(attr);
+              case "$cb":
+                return q.value.call(model, attr);
+            }
+          })());
         }
+        if (andOr === test) return andOr;
       }
       return !andOr;
     });
