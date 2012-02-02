@@ -13,12 +13,12 @@
     test = function(name, test_cb) {
       return exports[name] = function(testObj) {
         var result, _i, _len;
+        equals = [];
         test_cb();
         for (_i = 0, _len = equals.length; _i < _len; _i++) {
           result = equals[_i];
           testObj.equal(result[0], result[1]);
         }
-        equals = [];
         return testObj.done();
       };
     };

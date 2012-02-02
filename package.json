@@ -10,7 +10,8 @@
     ,   "url": "https://davidgtonge@github.com/davidgtonge/backbone_query.git"
     }
     , "dependencies": {
-      "backbone": ">=0.5.x"
+        "coffee-script" : ">=1.x.x"
+    ,  "backbone": ">=0.5.x"
     , "underscore": ">=1.1.x"
 }
     , "devDependencies": {
