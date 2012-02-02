@@ -48,7 +48,8 @@ test_query_value = (type, value) ->
     when "$cb"                        then _(value).isFunction()
     else true
 
-test_attr = (type, value) ->
+# Test each attribute that is being tested to ensure that is of the correct type
+test_model_attribute = (type, value) ->
   switch type
     when "$like", "$regex"            then _(value).isString()
     when "$contains", "$all", "$any"  then _(value).isArray()
@@ -66,7 +67,8 @@ iterator = (collection, query, andOr, filterReject) ->
       # Retrieve the attribute value from the model
       attr = model.get(q.key)
       # Check if the attribute value is the right type (some operators need a string, or an array)
-      test = test_attr(q.type, attr)
+      test = test_model_attribute(q.type, attr)
+      # If the attribute test is true, perform the query
       if test then test = (switch q.type
         when "$equal"     then attr is q.value
         when "$contains"  then q.value in attr
@@ -94,14 +96,17 @@ iterator = (collection, query, andOr, filterReject) ->
     # For an "and" query, if all the queries are true, then we return true
     not andOr
 
-
-# A object with or, and, nor and not methods
+# An object with or, and, nor and not methods
 process_query =
   $and: (collection, query) -> iterator collection, query, false, "filter"
   $or: (collection, query) -> iterator collection, query, true, "filter"
   $nor: (collection, query) -> iterator collection, query, true, "reject"
   $not: (collection, query) -> iterator collection, query, false, "reject"
 
+
+# This method attempts to retrieve the result from the cache.
+# If no match is found in the cache, then the query is run and
+# the results are saved in the cache
 get_cache = (collection, query, options) ->
   # Convert the query to a string to use as a key in the cache
   query_string = JSON.stringify query
@@ -116,6 +121,7 @@ get_cache = (collection, query, options) ->
   # Return the results
   models
 
+# This method get the unsorted results
 get_models = (collection, query) ->
 
   # Iterate through the query keys to check for any of the compound methods
@@ -177,6 +183,7 @@ page_models = (models, options) ->
 
   sliced_models
 
+# If used on the server, then Backbone and Underscore are loaded as modules
 unless typeof require is 'undefined'
   _ ?= require 'underscore'
   Backbone ?= require 'backbone'
@@ -202,5 +209,6 @@ Backbone.QueryCollection = Backbone.Collection.extend
   # Defined as a separate method to make it easy to bind to collection's change/add/remove events
   reset_query_cache: -> @_query_cache = {}
 
+# On the server the new Query Collection is added to exports
 unless typeof exports is "undefined"
   exports.QueryCollection = Backbone.QueryCollection

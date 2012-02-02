@@ -6,7 +6,7 @@ May be freely distributed according to MIT license.
 */
 
 (function() {
-  var array_intersection, get_cache, get_models, get_sorted_models, iterator, page_models, parse_query, process_query, sort_models, test_attr, test_query_value,
+  var array_intersection, get_cache, get_models, get_sorted_models, iterator, page_models, parse_query, process_query, sort_models, test_model_attribute, test_query_value,
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   array_intersection = function(arrays) {
@@ -69,7 +69,7 @@ May be freely distributed according to MIT license.
     }
   };
 
-  test_attr = function(type, value) {
+  test_model_attribute = function(type, value) {
     switch (type) {
       case "$like":
       case "$regex":
@@ -96,7 +96,7 @@ May be freely distributed according to MIT license.
       for (_i = 0, _len = parsed_query.length; _i < _len; _i++) {
         q = parsed_query[_i];
         attr = model.get(q.key);
-        test = test_attr(q.type, attr);
+        test = test_model_attribute(q.type, attr);
         if (test) {
           test = ((function() {
             var _ref;
