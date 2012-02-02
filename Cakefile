@@ -25,3 +25,9 @@ task 'uglify', 'Minify and obfuscate', ->
   final_code = pro.gen_code ast # compressed code here
 
   fs.writeFile 'js/backbone-query.min.js', final_code
+
+task "test", "Test the code", ->
+  path = require 'path'
+  reporter = require('nodeunit').reporters.default
+
+  reporter.run ["test/backbone-query-test.js"]

@@ -6,7 +6,7 @@ May be freely distributed according to MIT license.
 */
 
 (function() {
-  var and_iterator, array_intersection, get_cache, get_models, get_sorted_models, iterator, or_iterator, page_models, parse_query, process_query, sort_models, test_attr, test_query_value,
+  var array_intersection, get_cache, get_models, get_sorted_models, iterator, page_models, parse_query, process_query, sort_models, test_attr, test_query_value,
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   array_intersection = function(arrays) {
@@ -88,10 +88,10 @@ May be freely distributed according to MIT license.
     }
   };
 
-  iterator = function(collection, query, andOr) {
+  iterator = function(collection, query, andOr, filterReject) {
     var parsed_query;
     parsed_query = parse_query(query);
-    return collection.filter(function(model) {
+    return collection[filterReject](function(model) {
       var attr, q, test, _i, _len;
       for (_i = 0, _len = parsed_query.length; _i < _len; _i++) {
         q = parsed_query[_i];
@@ -149,26 +149,18 @@ May be freely distributed according to MIT license.
     });
   };
 
-  and_iterator = function(collection, query) {
-    return iterator(collection, query, false);
-  };
-
-  or_iterator = function(collection, query) {
-    return iterator(collection, query, true);
-  };
-
   process_query = {
     $and: function(collection, query) {
-      return and_iterator(collection, query);
+      return iterator(collection, query, false, "filter");
     },
     $or: function(collection, query) {
-      return or_iterator(collection, query);
+      return iterator(collection, query, true, "filter");
     },
     $nor: function(collection, query) {
-      return _.difference(collection.models, or_iterator(collection, query));
+      return iterator(collection, query, true, "reject");
     },
     $not: function(collection, query) {
-      return _.difference(collection.models, and_iterator(collection, query));
+      return iterator(collection, query, false, "reject");
     }
   };
 
@@ -244,6 +236,13 @@ May be freely distributed according to MIT license.
     return sliced_models;
   };
 
+  if (typeof require !== 'undefined') {
+    if (typeof _ === "undefined" || _ === null) _ = require('underscore');
+    if (typeof Backbone === "undefined" || Backbone === null) {
+      Backbone = require('backbone');
+    }
+  }
+
   Backbone.QueryCollection = Backbone.Collection.extend({
     query: function(query, options) {
       var models;
@@ -260,5 +259,9 @@ May be freely distributed according to MIT license.
       return this._query_cache = {};
     }
   });
+
+  if (typeof exports !== "undefined") {
+    exports.QueryCollection = Backbone.QueryCollection;
+  }
 
 }).call(this);

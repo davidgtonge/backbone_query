@@ -1,7 +1,23 @@
-module "Backbone Query"
+if typeof require isnt "undefined"
+  {QueryCollection} = require "../js/backbone-query.js"
+else
+  QueryCollection = Backbone.QueryCollection
+
+# Helper functions that turn Qunit tests into nodeunit tests
+equals = []
+
+test ?= (name, test_cb) ->
+  exports[name] = (testObj) ->
+    equals = []
+    test_cb()
+    for result in equals
+      testObj.equal result[0], result[1]
+    testObj.done()
+
+equal ?= (real, expected) -> equals.push [real, expected]
 
 create = ->
-  new Backbone.QueryCollection [
+  new QueryCollection [
     {title:"Home", colors:["red","yellow","blue"], likes:12, featured:true, content: "Dummy content about coffeescript"}
     {title:"About", colors:["red"], likes:2, featured:true, content: "dummy content about javascript"}
     {title:"Contact", colors:["red","blue"], likes:20, content: "Dummy content about PHP"}

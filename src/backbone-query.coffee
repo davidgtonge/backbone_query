@@ -40,27 +40,27 @@ parse_query = (raw_query) ->
 # Tests query value, to ensure that it is of the correct type
 test_query_value = (type, value) ->
   switch type
-    when "$in","$nin","$all", "$any" then _(value).isArray()
-    when "$size" then _(value).isNumber()
-    when "$regex" then _(value).isRegExp()
-    when "$like" then _(value).isString()
-    when "$between" then _(value).isArray() and (value.length is 2)
-    when "$cb" then _(value).isFunction()
+    when "$in","$nin","$all", "$any"  then _(value).isArray()
+    when "$size"                      then _(value).isNumber()
+    when "$regex"                     then _(value).isRegExp()
+    when "$like"                      then _(value).isString()
+    when "$between"                   then _(value).isArray() and (value.length is 2)
+    when "$cb"                        then _(value).isFunction()
     else true
 
 test_attr = (type, value) ->
   switch type
-    when "$like", "$regex" then _(value).isString()
-    when "$contains", "$all", "$any" then _(value).isArray()
-    when "$size" then _(value).isArray() or _(value).isString()
-    when "$in", "$nin" then value?
+    when "$like", "$regex"            then _(value).isString()
+    when "$contains", "$all", "$any"  then _(value).isArray()
+    when "$size"                      then _(value).isArray() or _(value).isString()
+    when "$in", "$nin"                then value?
     else true
 
 # The main iterator that actually applies the query
-iterator = (collection, query, andOr) ->
+iterator = (collection, query, andOr, filterReject) ->
   parsed_query = parse_query query
-  # The collections filter method is used to iterate through each model in the collection
-  collection.filter (model) ->
+  # The collections filter or reject method is used to iterate through each model in the collection
+  collection[filterReject] (model) ->
     # For each model in the collection, iterate through the supplied queries
     for q in parsed_query
       # Retrieve the attribute value from the model
@@ -94,15 +94,13 @@ iterator = (collection, query, andOr) ->
     # For an "and" query, if all the queries are true, then we return true
     not andOr
 
-and_iterator = (collection, query) -> iterator collection, query, false
-or_iterator = (collection, query) -> iterator collection, query, true
 
 # A object with or, and, nor and not methods
 process_query =
-  $and: (collection, query) -> and_iterator collection, query
-  $or: (collection, query) -> or_iterator collection, query
-  $nor: (collection, query) -> _.difference collection.models, (or_iterator collection, query)
-  $not: (collection, query) -> _.difference collection.models, (and_iterator collection, query)
+  $and: (collection, query) -> iterator collection, query, false, "filter"
+  $or: (collection, query) -> iterator collection, query, true, "filter"
+  $nor: (collection, query) -> iterator collection, query, true, "reject"
+  $not: (collection, query) -> iterator collection, query, false, "reject"
 
 get_cache = (collection, query, options) ->
   # Convert the query to a string to use as a key in the cache
@@ -123,7 +121,7 @@ get_models = (collection, query) ->
   # Iterate through the query keys to check for any of the compound methods
   compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value()
 
-  (switch compound_query.length
+  switch compound_query.length
     # If no compound methods are found then use the "and" iterator
     when 0 then process_query.$and collection, query
 
@@ -138,7 +136,7 @@ get_models = (collection, query) ->
         process_query[type] collection, query[type])
 
       # A modified form of Underscores Intersection is used to find the models that appear in all the result sets
-      array_intersection results)
+      array_intersection results
 
 # Gets the results and optionally sorts them
 get_sorted_models = (collection, query, options) ->
@@ -179,8 +177,9 @@ page_models = (models, options) ->
 
   sliced_models
 
-
-
+unless typeof require is 'undefined'
+  _ ?= require 'underscore'
+  Backbone ?= require 'backbone'
 
 Backbone.QueryCollection = Backbone.Collection.extend
 
@@ -202,3 +201,6 @@ Backbone.QueryCollection = Backbone.Collection.extend
   # Helper method to reset the query cache
   # Defined as a separate method to make it easy to bind to collection's change/add/remove events
   reset_query_cache: -> @_query_cache = {}
+
+unless typeof exports is "undefined"
+  exports.QueryCollection = Backbone.QueryCollection

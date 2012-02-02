@@ -1,0 +1,22 @@
+{
+    "name": "backbone-query"
+    , "description": "Lightweight Query API for Backbone Collections"
+    , "version": "0.1.1"
+    , "author": "Dave Tonge <dave@simplecreativity.co.uk> (https://github.com/davidgtonge)"
+    , "tags": ["backbone", "underscore", "mongo", "query"]
+    , "main": "./js/backbone-query"
+    , "repository": {
+        "type": "git"
+    ,   "url": "https://davidgtonge@github.com/davidgtonge/backbone_query.git"
+    }
+    , "dependencies": {
+      "backbone": ">=0.5.x"
+    , "underscore": ">=1.1.x"
+}
+    , "devDependencies": {
+    "qunit": "0.1.x"
+}
+    , "scripts": {
+    "test": "cake test"
+}
+}
