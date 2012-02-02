@@ -10,12 +10,13 @@
     ,   "url": "https://davidgtonge@github.com/davidgtonge/backbone_query.git"
     }
     , "dependencies": {
-        "coffee-script" : ">=1.x.x"
-    ,  "backbone": ">=0.5.x"
+      "backbone": ">=0.5.x"
     , "underscore": ">=1.1.x"
 }
     , "devDependencies": {
-    "qunit": "0.1.x"
+    "coffee-script" : ">=1.x.x"
+    ,"qunit": "0.1.x"
+    ,"uglify-js": "1.2.2"
 }
     , "scripts": {
     "test": "cake test"

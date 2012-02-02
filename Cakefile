@@ -1,7 +1,5 @@
 fs     = require 'fs'
 {exec} = require 'child_process'
-uglify = require './node_modules/uglify-js'
-
 
 task 'build', 'Build JS files from Coffee sources', ->
 
@@ -14,6 +12,7 @@ task 'build', 'Build JS files from Coffee sources', ->
     console.log stdout + stderr
 
 task 'uglify', 'Minify and obfuscate', ->
+  uglify = require 'uglify-js'
   jsp = uglify.parser
   pro = uglify.uglify
 
