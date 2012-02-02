@@ -1,8 +1,7 @@
 backbone-query
 ===================
 
-.. |travis_status| image:: https://secure.travis-ci.org/davidgtonge/backbone_query.png
-   :target: http://travis-ci.org/davidgtonge/backbone_query
+[![Build Status](https://secure.travis-ci.org/davidgtonge/backbone-query.png)](http://travis-ci.org/davidgtonge/backbone-query)
 
 A lightweight (3KB minified) utility for Backbone projects, that works in the Browser and on the Server.
 Adds the ability to search for models with a Query API similar to
