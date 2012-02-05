@@ -6,18 +6,8 @@ May be freely distributed according to MIT license.
 */
 
 (function() {
-  var array_intersection, get_cache, get_models, get_sorted_models, iterator, page_models, parse_query, process_query, sort_models, test_model_attribute, test_query_value,
+  var get_cache, get_models, get_sorted_models, iterator, page_models, parse_query, process_query, sort_models, test_model_attribute, test_query_value,
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
-
-  array_intersection = function(arrays) {
-    var rest;
-    rest = _.rest(arrays);
-    return _.filter(_.uniq(arrays[0]), function(item) {
-      return _.every(rest, function(other) {
-        return _.indexOf(other, item) >= 0;
-      });
-    });
-  };
 
   parse_query = function(raw_query) {
     var key, o, query_param, type, value, _results;
@@ -88,10 +78,10 @@ May be freely distributed according to MIT license.
     }
   };
 
-  iterator = function(collection, query, andOr, filterReject) {
+  iterator = function(models, query, andOr, filterReject) {
     var parsed_query;
     parsed_query = parse_query(query);
-    return collection[filterReject](function(model) {
+    return _[filterReject](models, function(model) {
       var attr, q, test, _i, _len;
       for (_i = 0, _len = parsed_query.length; _i < _len; _i++) {
         q = parsed_query[_i];
@@ -150,17 +140,17 @@ May be freely distributed according to MIT license.
   };
 
   process_query = {
-    $and: function(collection, query) {
-      return iterator(collection, query, false, "filter");
+    $and: function(models, query) {
+      return iterator(models, query, false, "filter");
     },
-    $or: function(collection, query) {
-      return iterator(collection, query, true, "filter");
+    $or: function(models, query) {
+      return iterator(models, query, true, "filter");
     },
-    $nor: function(collection, query) {
-      return iterator(collection, query, true, "reject");
+    $nor: function(models, query) {
+      return iterator(models, query, true, "reject");
     },
-    $not: function(collection, query) {
-      return iterator(collection, query, false, "reject");
+    $not: function(models, query) {
+      return iterator(models, query, false, "reject");
     }
   };
 
@@ -177,25 +167,20 @@ May be freely distributed according to MIT license.
   };
 
   get_models = function(collection, query) {
-    var compound_query, results, type;
+    var compound_query, models, reduce_iterator, type;
     compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value();
+    models = collection.models;
     switch (compound_query.length) {
       case 0:
-        return process_query.$and(collection, query);
+        return process_query.$and(models, query);
       case 1:
         type = compound_query[0];
-        return process_query[type](collection, query[type]);
+        return process_query[type](models, query[type]);
       default:
-        results = (function() {
-          var _i, _len, _results;
-          _results = [];
-          for (_i = 0, _len = compound_query.length; _i < _len; _i++) {
-            type = compound_query[_i];
-            _results.push(process_query[type](collection, query[type]));
-          }
-          return _results;
-        })();
-        return array_intersection(results);
+        reduce_iterator = function(memo, query_type) {
+          return process_query[query_type](memo, query[query_type]);
+        };
+        return _.reduce(compound_query, reduce_iterator, models);
     }
   };
 

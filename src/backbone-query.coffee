@@ -4,22 +4,11 @@ Backbone Query - A lightweight query API for Backbone Collections
 May be freely distributed according to MIT license.
 ###
 
-# Array Intersection - Helper Function
-# * Modified version of Underscore Intersection, accepts an array of arrays rather than multiple arrays
-# * Returns results that are present in each of the supplied arrays
-array_intersection = (arrays) ->
-  rest = _.rest arrays
-  _.filter _.uniq(arrays[0]), (item) ->
-    _.every rest, (other) ->
-      _.indexOf(other, item) >= 0
-
-
 # This function parses the query and converts it into an array of objects.
 # Each object has a key (model property), type (query type - $gt, $like...) and value (mixed).
 parse_query = (raw_query) ->
   (for key, query_param of raw_query
     o = {key}
-
     # Test for Regexs as they can be supplied without an operator
     if _.isRegExp(query_param)
       o.type = "$regex"
@@ -58,10 +47,10 @@ test_model_attribute = (type, value) ->
     else true
 
 # The main iterator that actually applies the query
-iterator = (collection, query, andOr, filterReject) ->
+iterator = (models, query, andOr, filterReject) ->
   parsed_query = parse_query query
   # The collections filter or reject method is used to iterate through each model in the collection
-  collection[filterReject] (model) ->
+  _[filterReject] models, (model) ->
     # For each model in the collection, iterate through the supplied queries
     for q in parsed_query
       # Retrieve the attribute value from the model
@@ -98,10 +87,10 @@ iterator = (collection, query, andOr, filterReject) ->
 
 # An object with or, and, nor and not methods
 process_query =
-  $and: (collection, query) -> iterator collection, query, false, "filter"
-  $or: (collection, query) -> iterator collection, query, true, "filter"
-  $nor: (collection, query) -> iterator collection, query, true, "reject"
-  $not: (collection, query) -> iterator collection, query, false, "reject"
+  $and: (models, query) -> iterator models, query, false, "filter"
+  $or: (models, query) -> iterator models, query, true, "filter"
+  $nor: (models, query) -> iterator models, query, true, "reject"
+  $not: (models, query) -> iterator models, query, false, "reject"
 
 
 # This method attempts to retrieve the result from the cache.
@@ -127,22 +116,24 @@ get_models = (collection, query) ->
   # Iterate through the query keys to check for any of the compound methods
   compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value()
 
+  # Assign the collections models to a local variable to use in the follwoing switch
+  models = collection.models
+
   switch compound_query.length
     # If no compound methods are found then use the "and" iterator
-    when 0 then process_query.$and collection, query
+    when 0 then process_query.$and models, query
 
     # If only 1 compound method then invoke just that method
     when 1
       type = compound_query[0]
-      process_query[type] collection, query[type]
+      process_query[type] models, query[type]
 
-    # If more than 1 method is found, process each of the methods
+    # If more than 1 method is found, process each of the methods using underscore reduce
     else
-      results = (for type in compound_query
-        process_query[type] collection, query[type])
+      reduce_iterator = (memo, query_type) ->
+        process_query[query_type] memo, query[query_type]
 
-      # A modified form of Underscores Intersection is used to find the models that appear in all the result sets
-      array_intersection results
+      _.reduce compound_query, reduce_iterator, models
 
 # Gets the results and optionally sorts them
 get_sorted_models = (collection, query, options) ->
