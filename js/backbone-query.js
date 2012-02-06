@@ -88,7 +88,7 @@ May be freely distributed according to MIT license.
         attr = model.get(q.key);
         test = test_model_attribute(q.type, attr);
         if (test) {
-          test = ((function() {
+          test = (function() {
             var _ref;
             switch (q.type) {
               case "$equal":
@@ -131,7 +131,7 @@ May be freely distributed according to MIT license.
               case "$cb":
                 return q.value.call(model, attr);
             }
-          })());
+          })();
         }
         if (andOr === test) return andOr;
       }
@@ -167,15 +167,15 @@ May be freely distributed according to MIT license.
   };
 
   get_models = function(collection, query) {
-    var compound_query, models, reduce_iterator, type;
-    compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value();
+    var compound_query, models, query_type, reduce_iterator;
+    compound_query = _.intersection(["$and", "$not", "$or", "$nor"], _(query).keys());
     models = collection.models;
     switch (compound_query.length) {
       case 0:
         return process_query.$and(models, query);
       case 1:
-        type = compound_query[0];
-        return process_query[type](models, query[type]);
+        query_type = compound_query[0];
+        return process_query[query_type](models, query[query_type]);
       default:
         reduce_iterator = function(memo, query_type) {
           return process_query[query_type](memo, query[query_type]);

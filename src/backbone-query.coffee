@@ -58,7 +58,7 @@ iterator = (models, query, andOr, filterReject) ->
       # Check if the attribute value is the right type (some operators need a string, or an array)
       test = test_model_attribute(q.type, attr)
       # If the attribute test is true, perform the query
-      if test then test = (switch q.type
+      if test then test = switch q.type
         when "$equal"     then attr is q.value
         when "$contains"  then q.value in attr
         when "$ne"        then attr isnt q.value
@@ -75,7 +75,7 @@ iterator = (models, query, andOr, filterReject) ->
         when "$exists", "$has" then model.has(q.key) is q.value
         when "$like"      then attr.indexOf(q.value) isnt -1
         when "$regex"     then q.value.test attr
-        when "$cb"        then q.value.call model, attr)
+        when "$cb"        then q.value.call model, attr
 
       # If the query is an "or" query than as soon as a match is found we return "true"
       # Whereas if the query is an "and" query then we return "false" as soon as a match isn't found.
@@ -114,9 +114,11 @@ get_cache = (collection, query, options) ->
 get_models = (collection, query) ->
 
   # Iterate through the query keys to check for any of the compound methods
-  compound_query = _(query).chain().keys().intersection(["$or", "$and", "$nor", "$not"]).value()
+  # The resulting array will have "$and" and "$not" first as it is better to use these
+  # operators first when performing a compound query as they are likely to return less results
+  compound_query = _.intersection ["$and", "$not", "$or", "$nor"], _(query).keys()
 
-  # Assign the collections models to a local variable to use in the follwoing switch
+  # Assign the collections models to a local variable to use in the following switch
   models = collection.models
 
   switch compound_query.length
@@ -125,8 +127,8 @@ get_models = (collection, query) ->
 
     # If only 1 compound method then invoke just that method
     when 1
-      type = compound_query[0]
-      process_query[type] models, query[type]
+      query_type = compound_query[0]
+      process_query[query_type] models, query[query_type]
 
     # If more than 1 method is found, process each of the methods using underscore reduce
     else
