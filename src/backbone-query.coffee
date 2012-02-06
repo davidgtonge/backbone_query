@@ -32,7 +32,7 @@ test_query_value = (type, value) ->
     when "$in","$nin","$all", "$any"  then _(value).isArray()
     when "$size"                      then _(value).isNumber()
     when "$regex"                     then _(value).isRegExp()
-    when "$like"                      then _(value).isString()
+    when "$like", "$likeI"            then _(value).isString()
     when "$between"                   then _(value).isArray() and (value.length is 2)
     when "$cb"                        then _(value).isFunction()
     else true
@@ -40,11 +40,35 @@ test_query_value = (type, value) ->
 # Test each attribute that is being tested to ensure that is of the correct type
 test_model_attribute = (type, value) ->
   switch type
-    when "$like", "$regex"            then _(value).isString()
+    when "$like", "$likeI", "$regex"  then _(value).isString()
     when "$contains", "$all", "$any"  then _(value).isArray()
     when "$size"                      then _(value).isArray() or _(value).isString()
     when "$in", "$nin"                then value?
     else true
+
+# Perform the actual query logic for each query and each model/attribute
+perform_query = (type, value, attr, model) ->
+  switch type
+    when "$equal"           then attr is value
+    when "$contains"        then value in attr
+    when "$ne"              then attr isnt value
+    when "$lt"              then attr < value
+    when "$gt"              then attr > value
+    when "$lte"             then attr <= value
+    when "$gte"             then attr >= value
+    when "$between"         then value[0] < attr < value[1]
+    when "$in"              then attr in value
+    when "$nin"             then attr not in value
+    when "$all"             then _(attr).all (item) -> item in value
+    when "$any"             then _(attr).any (item) -> item in value
+    when "$size"            then attr.length is value
+    when "$exists", "$has"  then attr? is value
+    when "$like"            then attr.indexOf(value) isnt -1
+    when "$likeI"           then attr.toLowerCase().indexOf(value.toLowerCase()) isnt -1
+    when "$regex"           then value.test attr
+    when "$cb"              then value.call model, attr
+    else false
+
 
 # The main iterator that actually applies the query
 iterator = (models, query, andOr, filterReject) ->
@@ -58,25 +82,7 @@ iterator = (models, query, andOr, filterReject) ->
       # Check if the attribute value is the right type (some operators need a string, or an array)
       test = test_model_attribute(q.type, attr)
       # If the attribute test is true, perform the query
-      if test then test = switch q.type
-        when "$equal"     then attr is q.value
-        when "$contains"  then q.value in attr
-        when "$ne"        then attr isnt q.value
-        when "$lt"        then attr < q.value
-        when "$gt"        then attr > q.value
-        when "$lte"       then attr <= q.value
-        when "$gte"       then attr >= q.value
-        when "$between"   then q.value[0] < attr < q.value[1]
-        when "$in"        then attr in q.value
-        when "$nin"       then attr not in q.value
-        when "$all"       then _(model.get q.key).all (item) -> item in q.value
-        when "$any"       then _(model.get q.key).any (item) -> item in q.value
-        when "$size"      then attr.length is q.value
-        when "$exists", "$has" then model.has(q.key) is q.value
-        when "$like"      then attr.indexOf(q.value) isnt -1
-        when "$regex"     then q.value.test attr
-        when "$cb"        then q.value.call model, attr
-
+      if test then test = perform_query q.type, q.value, attr, model
       # If the query is an "or" query than as soon as a match is found we return "true"
       # Whereas if the query is an "and" query then we return "false" as soon as a match isn't found.
       return andOr if andOr is test

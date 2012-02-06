@@ -183,7 +183,7 @@
         $in: "Home"
       }
     });
-    return equal(result.length, 3);
+    return equal(result.length, 0);
   });
 
   test("$nin operator", function() {
@@ -223,7 +223,7 @@
         $all: "red"
       }
     });
-    return equal(result.length, 3);
+    return equal(result.length, 0);
   });
 
   test("$any operator", function() {
@@ -299,6 +299,23 @@
       }
     });
     return equal(result.length, 3);
+  });
+
+  test("$likeI operator", function() {
+    var a, result;
+    a = create();
+    result = a.query({
+      content: {
+        $likeI: "dummy"
+      }
+    });
+    equal(result.length, 3);
+    result = a.query({
+      content: {
+        $like: "dummy"
+      }
+    });
+    return equal(result.length, 1);
   });
 
   test("$regex", function() {

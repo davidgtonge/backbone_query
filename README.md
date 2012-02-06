@@ -175,8 +175,17 @@ Uses indexOf rather than regex for performance reasons
 
 ```js
 MyCollection.query({ title: {$like: "Test" } });
-//Returns all models which have a "title" attribute what
+//Returns all models which have a "title" attribute that
 //contains the string "Test", e.g. "Testing", "Tests", "Test", etc.
+```
+
+### $likeI
+The same as above but performs a case insensitive search using indexOf and toLowerCase (still faster than Regex)
+
+```js
+MyCollection.query({ title: {$likeI: "Test" } });
+//Returns all models which have a "title" attribute that
+//contains the string "Test", "test", "tEst","tesT", etc.
 ```
 
 ### $regex

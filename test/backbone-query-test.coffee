@@ -86,7 +86,7 @@ test "$in operator", ->
 test "$in operator with wrong query value", ->
   a = create()
   result = a.query title: {$in: "Home"}
-  equal result.length, 3
+  equal result.length, 0
 
 test "$nin operator", ->
   a = create()
@@ -105,7 +105,7 @@ test "$all operator (wrong values)", ->
   equal result.length, 0
 
   result = a.query colors: {$all: "red"}
-  equal result.length, 3
+  equal result.length, 0
 
 test "$any operator", ->
   a = create()
@@ -142,6 +142,13 @@ test "$like operator 2", ->
   a = create()
   result = a.query content: {$like: "content"}
   equal result.length, 3
+
+test "$likeI operator", ->
+  a = create()
+  result = a.query content: {$likeI: "dummy"}
+  equal result.length, 3
+  result = a.query content: {$like: "dummy"}
+  equal result.length, 1
 
 test "$regex", ->
   a = create()
