@@ -172,20 +172,16 @@ May be freely distributed according to MIT license.
   };
 
   get_models = function(collection, query) {
-    var compound_query, models, query_type, reduce_iterator;
+    var compound_query, models, reduce_iterator;
     compound_query = _.intersection(["$and", "$not", "$or", "$nor"], _(query).keys());
     models = collection.models;
-    switch (compound_query.length) {
-      case 0:
-        return process_query.$and(models, query);
-      case 1:
-        query_type = compound_query[0];
-        return process_query[query_type](models, query[query_type]);
-      default:
-        reduce_iterator = function(memo, query_type) {
-          return process_query[query_type](memo, query[query_type]);
-        };
-        return _.reduce(compound_query, reduce_iterator, models);
+    if (compound_query.length === 0) {
+      return process_query.$and(models, query);
+    } else {
+      reduce_iterator = function(memo, query_type) {
+        return process_query[query_type](memo, query[query_type]);
+      };
+      return _.reduce(compound_query, reduce_iterator, models);
     }
   };
 

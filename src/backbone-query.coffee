@@ -127,21 +127,17 @@ get_models = (collection, query) ->
   # Assign the collections models to a local variable to use in the following switch
   models = collection.models
 
-  switch compound_query.length
+  if compound_query.length is 0
     # If no compound methods are found then use the "and" iterator
-    when 0 then process_query.$and models, query
+    process_query.$and models, query
+  else
+    # Else iterate through the compound methods using underscore reduce
+    # The reduce iterator takes an array of models, performs the query and returns
+    # the matched models for the next query
+    reduce_iterator = (memo, query_type) ->
+      process_query[query_type] memo, query[query_type]
 
-    # If only 1 compound method then invoke just that method
-    when 1
-      query_type = compound_query[0]
-      process_query[query_type] models, query[query_type]
-
-    # If more than 1 method is found, process each of the methods using underscore reduce
-    else
-      reduce_iterator = (memo, query_type) ->
-        process_query[query_type] memo, query[query_type]
-
-      _.reduce compound_query, reduce_iterator, models
+    _.reduce compound_query, reduce_iterator, models
 
 # Gets the results and optionally sorts them
 get_sorted_models = (collection, query, options) ->
