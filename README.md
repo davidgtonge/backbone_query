@@ -24,7 +24,10 @@ Then simply require in your project: `QueryCollection = require("backbone-query"
 Your collections will now have a `query` method that can be used like this:
 
 ```js
-MyCollection.query({ {featured:true}, {likes: $gt:10} });
+MyCollection.query({ 
+    featured:true, 
+    likes: {$gt:10}
+});
 // Returns all models where the featured attribute is true and there are
 // more than 10 likes
 
@@ -40,13 +43,15 @@ MyCollection.query({
   // Models must match all these queries
   $and:{
     title: {$like: "news"}, // Title attribute contains the string "news"
-    likes: {$gt: 10}}, // Likes attribute is greater than 10
+    likes: {$gt: 10}
+  }, // Likes attribute is greater than 10
 
   // Models must match one of these queries
   $or:{
     featured: true, // Featured attribute is true
-    category:{$in:["code","programming","javascript"]}}
-    //Category attribute is either "code", "programming", or "javascript"
+    category:{$in:["code","programming","javascript"]}
+  } 
+  //Category attribute is either "code", "programming", or "javascript"
 });
 ```
 
