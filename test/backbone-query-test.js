@@ -725,4 +725,15 @@
     });
     return equal(result.length, 0);
   });
+  test("Where method", function() {
+    var a, result;
+    a = create();
+    result = a.where({
+      likes: {
+        $gt: 5
+      }
+    });
+    equal(result.length, 2);
+    return equal(result.models.length, result.length);
+  });
 }).call(this);
