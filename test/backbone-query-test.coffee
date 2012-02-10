@@ -216,8 +216,10 @@ test "Compound Queries", ->
     $and:
       likes: $lt: 15
     $or:
-      content: $like: "Dummy"
-      featured:$exists:true
+      content:
+        $like: "Dummy"
+      featured:
+        $exists:true
     $not:
       colors: $contains: "yellow"
   equal result.length, 1
