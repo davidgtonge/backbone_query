@@ -24,7 +24,7 @@ Then simply require in your project: `QueryCollection = require("backbone-query"
 Your collections will now have two new methods: `query` and `where`. Both methods accept 2 arguments - 
 a query object and an options object. The `query` method returns an array of models, but the `where` method
 returns a new collection and is therefore useful where you would like to chain multiple collection 
-methods / where queries. The following are some basic examples:
+methods / where queries (thanks to @cezary). The following are some basic examples:
 
 ```js
 MyCollection.query({ 
