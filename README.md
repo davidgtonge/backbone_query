@@ -21,7 +21,10 @@ You can install with NPM: `npm install backbone-query`
 Then simply require in your project: `QueryCollection = require("backbone-query").QueryCollection`
 
 
-Your collections will now have a `query` method that can be used like this:
+Your collections will now have two new methods: `query` and `where`. Both methods accept 2 arguments - 
+a query object and an options object. The `query` method returns an array of models, but the `where` method
+returns a new collection and is therefore useful where you would like to chain multiple collection 
+methods / where queries. The following are some basic examples:
 
 ```js
 MyCollection.query({ 
@@ -67,6 +70,17 @@ MyCollection.query
   $not:
     colors: $contains: "yellow"
 ```
+
+Another CoffeeScript example, this time using `where` rather than `query`
+
+```coffeescript
+query = 
+  $likes: $lt: 10
+  $downloads: $gt: 20
+  
+MyCollection.where(query).my_custom_collection_method()
+```
+
 
 Query API
 ===
