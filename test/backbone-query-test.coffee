@@ -216,8 +216,10 @@ test "Compound Queries", ->
     $and:
       likes: $lt: 15
     $or:
-      content: $like: "Dummy"
-      featured:$exists:true
+      content:
+        $like: "Dummy"
+      featured:
+        $exists:true
     $not:
       colors: $contains: "yellow"
   equal result.length, 1
@@ -327,6 +329,8 @@ test "null attribute with various operators", ->
   result = a.query wrong_key: {$nin: [12,23]}
   equal result.length, 0
 
-
-
-
+test "Where method", ->
+  a = create()
+  result = a.where likes: $gt: 5
+  equal result.length, 2
+  equal result.models.length, result.length

@@ -200,6 +200,10 @@ Backbone.QueryCollection = Backbone.Collection.extend
     # Return the results
     models
 
+  # Where method wraps query and returns a new collection
+  where: (params, options = {})->
+    new @constructor @query params, options
+
   # Helper method to reset the query cache
   # Defined as a separate method to make it easy to bind to collection's change/add/remove events
   reset_query_cache: -> @_query_cache = {}
