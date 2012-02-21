@@ -1,17 +1,14 @@
-(function() {
-  /*
-  Backbone Query - A lightweight query API for Backbone Collections
-  (c)2012 - Dave Tonge
-  May be freely distributed according to MIT license.
-  */
 
-  var get_cache, get_models, get_sorted_models, iterator, page_models, parse_query, perform_query, process_query, sort_models, test_model_attribute, test_query_value;
-  var __indexOf = Array.prototype.indexOf || function(item) {
-    for (var i = 0, l = this.length; i < l; i++) {
-      if (this[i] === item) return i;
-    }
-    return -1;
-  };
+/*
+Backbone Query - A lightweight query API for Backbone Collections
+(c)2012 - Dave Tonge
+May be freely distributed according to MIT license.
+*/
+
+(function() {
+  var filter, get_cache, get_models, get_sorted_models, iterator, page_models, parse_query, perform_query, process_query, reject, sort_models, test_model_attribute, test_query_value,
+    __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+
   parse_query = function(raw_query) {
     var key, o, query_param, type, value, _results;
     _results = [];
@@ -39,6 +36,7 @@
     }
     return _results;
   };
+
   test_query_value = function(type, value) {
     switch (type) {
       case "$in":
@@ -61,6 +59,7 @@
         return true;
     }
   };
+
   test_model_attribute = function(type, value) {
     switch (type) {
       case "$like":
@@ -80,6 +79,7 @@
         return true;
     }
   };
+
   perform_query = function(type, value, attr, model) {
     switch (type) {
       case "$equal":
@@ -127,10 +127,11 @@
         return false;
     }
   };
+
   iterator = function(models, query, andOr, filterReject) {
     var parsed_query;
     parsed_query = parse_query(query);
-    return _[filterReject](models, function(model) {
+    return filterReject(models, function(model) {
       var attr, q, test, _i, _len;
       for (_i = 0, _len = parsed_query.length; _i < _len; _i++) {
         q = parsed_query[_i];
@@ -142,20 +143,42 @@
       return !andOr;
     });
   };
+
+  filter = function(array, test) {
+    var index, val, _i, _len, _results;
+    _results = [];
+    for (index = _i = 0, _len = array.length; _i < _len; index = ++_i) {
+      val = array[index];
+      if (test(val)) _results.push(val);
+    }
+    return _results;
+  };
+
+  reject = function(array, test) {
+    var index, val, _i, _len, _results;
+    _results = [];
+    for (index = _i = 0, _len = array.length; _i < _len; index = ++_i) {
+      val = array[index];
+      if (!test(val)) _results.push(val);
+    }
+    return _results;
+  };
+
   process_query = {
     $and: function(models, query) {
-      return iterator(models, query, false, "filter");
+      return iterator(models, query, false, filter);
     },
     $or: function(models, query) {
-      return iterator(models, query, true, "filter");
+      return iterator(models, query, true, filter);
     },
     $nor: function(models, query) {
-      return iterator(models, query, true, "reject");
+      return iterator(models, query, true, reject);
     },
     $not: function(models, query) {
-      return iterator(models, query, false, "reject");
+      return iterator(models, query, false, reject);
     }
   };
+
   get_cache = function(collection, query, options) {
     var cache, models, query_string, _ref;
     query_string = JSON.stringify(query);
@@ -167,6 +190,7 @@
     }
     return models;
   };
+
   get_models = function(collection, query) {
     var compound_query, models, reduce_iterator;
     compound_query = _.intersection(["$and", "$not", "$or", "$nor"], _(query).keys());
@@ -180,12 +204,14 @@
       return _.reduce(compound_query, reduce_iterator, models);
     }
   };
+
   get_sorted_models = function(collection, query, options) {
     var models;
     models = get_models(collection, query);
     if (options.sortBy) models = sort_models(models, options);
     return models;
   };
+
   sort_models = function(models, options) {
     if (_(options.sortBy).isString()) {
       models = _(models).sortBy(function(model) {
@@ -197,6 +223,7 @@
     if (options.order === "desc") models = models.reverse();
     return models;
   };
+
   page_models = function(models, options) {
     var end, sliced_models, start, total_pages;
     if (options.offset) {
@@ -214,10 +241,14 @@
     }
     return sliced_models;
   };
+
   if (typeof require !== 'undefined') {
     if (typeof _ === "undefined" || _ === null) _ = require('underscore');
-    if (typeof Backbone === "undefined" || Backbone === null) Backbone = require('backbone');
+    if (typeof Backbone === "undefined" || Backbone === null) {
+      Backbone = require('backbone');
+    }
   }
+
   Backbone.QueryCollection = Backbone.Collection.extend({
     query: function(query, options) {
       var models;
@@ -238,5 +269,9 @@
       return this._query_cache = {};
     }
   });
-  if (typeof exports !== "undefined") exports.QueryCollection = Backbone.QueryCollection;
+
+  if (typeof exports !== "undefined") {
+    exports.QueryCollection = Backbone.QueryCollection;
+  }
+
 }).call(this);

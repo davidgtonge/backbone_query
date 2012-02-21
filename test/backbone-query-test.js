@@ -1,11 +1,14 @@
 (function() {
   var QueryCollection, create, equals;
+
   if (typeof require !== "undefined") {
     QueryCollection = require("../js/backbone-query.js").QueryCollection;
   } else {
     QueryCollection = Backbone.QueryCollection;
   }
+
   equals = [];
+
   if (typeof test === "undefined" || test === null) {
     test = function(name, test_cb) {
       return exports[name] = function(testObj) {
@@ -20,11 +23,13 @@
       };
     };
   }
+
   if (typeof equal === "undefined" || equal === null) {
     equal = function(real, expected) {
       return equals.push([real, expected]);
     };
   }
+
   create = function() {
     return new QueryCollection([
       {
@@ -47,6 +52,7 @@
       }
     ]);
   };
+
   test("Simple equals query", function() {
     var a, result;
     a = create();
@@ -56,6 +62,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "Home");
   });
+
   test("Simple equals query (no results)", function() {
     var a, result;
     a = create();
@@ -64,6 +71,7 @@
     });
     return equal(result.length, 0);
   });
+
   test("Simple equals query with explicit $equal", function() {
     var a, result;
     a = create();
@@ -75,6 +83,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "About");
   });
+
   test("$contains operator", function() {
     var a, result;
     a = create();
@@ -85,6 +94,7 @@
     });
     return equal(result.length, 2);
   });
+
   test("$ne operator", function() {
     var a, result;
     a = create();
@@ -95,6 +105,7 @@
     });
     return equal(result.length, 2);
   });
+
   test("$lt operator", function() {
     var a, result;
     a = create();
@@ -106,6 +117,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "About");
   });
+
   test("$lte operator", function() {
     var a, result;
     a = create();
@@ -116,6 +128,7 @@
     });
     return equal(result.length, 2);
   });
+
   test("$gt operator", function() {
     var a, result;
     a = create();
@@ -127,6 +140,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "Contact");
   });
+
   test("$gte operator", function() {
     var a, result;
     a = create();
@@ -137,6 +151,7 @@
     });
     return equal(result.length, 2);
   });
+
   test("$between operator", function() {
     var a, result;
     a = create();
@@ -148,6 +163,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "About");
   });
+
   test("$in operator", function() {
     var a, result;
     a = create();
@@ -158,6 +174,7 @@
     });
     return equal(result.length, 2);
   });
+
   test("$in operator with wrong query value", function() {
     var a, result;
     a = create();
@@ -168,6 +185,7 @@
     });
     return equal(result.length, 0);
   });
+
   test("$nin operator", function() {
     var a, result;
     a = create();
@@ -179,6 +197,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "Contact");
   });
+
   test("$all operator", function() {
     var a, result;
     a = create();
@@ -189,6 +208,7 @@
     });
     return equal(result.length, 2);
   });
+
   test("$all operator (wrong values)", function() {
     var a, result;
     a = create();
@@ -205,6 +225,7 @@
     });
     return equal(result.length, 0);
   });
+
   test("$any operator", function() {
     var a, result;
     a = create();
@@ -221,6 +242,7 @@
     });
     return equal(result.length, 2);
   });
+
   test("$size operator", function() {
     var a, result;
     a = create();
@@ -232,6 +254,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "Home");
   });
+
   test("$exists operator", function() {
     var a, result;
     a = create();
@@ -242,6 +265,7 @@
     });
     return equal(result.length, 2);
   });
+
   test("$has operator", function() {
     var a, result;
     a = create();
@@ -253,6 +277,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "Contact");
   });
+
   test("$like operator", function() {
     var a, result;
     a = create();
@@ -264,6 +289,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "About");
   });
+
   test("$like operator 2", function() {
     var a, result;
     a = create();
@@ -274,6 +300,7 @@
     });
     return equal(result.length, 3);
   });
+
   test("$likeI operator", function() {
     var a, result;
     a = create();
@@ -290,6 +317,7 @@
     });
     return equal(result.length, 1);
   });
+
   test("$regex", function() {
     var a, result;
     a = create();
@@ -301,6 +329,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "About");
   });
+
   test("$regex2", function() {
     var a, result;
     a = create();
@@ -311,6 +340,7 @@
     });
     return equal(result.length, 1);
   });
+
   test("$regex3", function() {
     var a, result;
     a = create();
@@ -321,6 +351,7 @@
     });
     return equal(result.length, 3);
   });
+
   test("$regex4", function() {
     var a, result;
     a = create();
@@ -329,6 +360,7 @@
     });
     return equal(result.length, 1);
   });
+
   test("$cb - callback", function() {
     var a, result;
     a = create();
@@ -342,6 +374,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "Contact");
   });
+
   test("$cb - callback - checking 'this' is the model", function() {
     var a, result;
     a = create();
@@ -355,6 +388,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "Home");
   });
+
   test("$and operator", function() {
     var a, result;
     a = create();
@@ -369,6 +403,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "Home");
   });
+
   test("$and operator (explicit)", function() {
     var a, result;
     a = create();
@@ -385,6 +420,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "Home");
   });
+
   test("$or operator", function() {
     var a, result;
     a = create();
@@ -400,6 +436,7 @@
     });
     return equal(result.length, 2);
   });
+
   test("$nor operator", function() {
     var a, result;
     a = create();
@@ -416,6 +453,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "About");
   });
+
   test("Compound Queries", function() {
     var a, result;
     a = create();
@@ -458,6 +496,7 @@
     equal(result.length, 1);
     return equal(result[0].get("title"), "About");
   });
+
   test("Limit", function() {
     var a, result;
     a = create();
@@ -470,6 +509,7 @@
     });
     return equal(result.length, 2);
   });
+
   test("Offset", function() {
     var a, result;
     a = create();
@@ -483,6 +523,7 @@
     });
     return equal(result.length, 1);
   });
+
   test("Page", function() {
     var a, result;
     a = create();
@@ -496,6 +537,7 @@
     });
     return equal(result.length, 0);
   });
+
   test("Sorder by model key", function() {
     var a, result;
     a = create();
@@ -511,6 +553,7 @@
     equal(result[1].get("title"), "Home");
     return equal(result[2].get("title"), "Contact");
   });
+
   test("Sorder by model key with descending order", function() {
     var a, result;
     a = create();
@@ -527,6 +570,7 @@
     equal(result[1].get("title"), "Home");
     return equal(result[0].get("title"), "Contact");
   });
+
   test("Sorder by function", function() {
     var a, result;
     a = create();
@@ -544,6 +588,7 @@
     equal(result[0].get("title"), "Home");
     return equal(result[1].get("title"), "Contact");
   });
+
   test("cache", function() {
     var a, result;
     a = create();
@@ -592,6 +637,7 @@
     });
     return equal(result.length, 3);
   });
+
   test("cache with multiple collections", function() {
     var a, a_result, b, b_result;
     a = create();
@@ -673,6 +719,7 @@
     equal(b_result.length, 2);
     return equal(b.length, 1);
   });
+
   test("null attribute with various operators", function() {
     var a, result;
     a = create();
@@ -725,6 +772,7 @@
     });
     return equal(result.length, 0);
   });
+
   test("Where method", function() {
     var a, result;
     a = create();
@@ -736,4 +784,5 @@
     equal(result.length, 2);
     return equal(result.models.length, result.length);
   });
+
 }).call(this);

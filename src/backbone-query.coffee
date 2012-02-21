@@ -74,7 +74,7 @@ perform_query = (type, value, attr, model) ->
 iterator = (models, query, andOr, filterReject) ->
   parsed_query = parse_query query
   # The collections filter or reject method is used to iterate through each model in the collection
-  _[filterReject] models, (model) ->
+  filterReject models, (model) ->
     # For each model in the collection, iterate through the supplied queries
     for q in parsed_query
       # Retrieve the attribute value from the model
@@ -91,12 +91,17 @@ iterator = (models, query, andOr, filterReject) ->
     # For an "and" query, if all the queries are true, then we return true
     not andOr
 
+# Custom Filter / Reject methods faster than underscore methods as use for loops
+# http://jsperf.com/filter-vs-for-loop2
+filter = (array, test) -> (val for val, index in array when test val)
+reject = (array, test) -> (val for val, index in array when not test val)
+
 # An object with or, and, nor and not methods
 process_query =
-  $and: (models, query) -> iterator models, query, false, "filter"
-  $or: (models, query) -> iterator models, query, true, "filter"
-  $nor: (models, query) -> iterator models, query, true, "reject"
-  $not: (models, query) -> iterator models, query, false, "reject"
+  $and: (models, query) -> iterator models, query, false, filter
+  $or: (models, query) -> iterator models, query, true, filter
+  $nor: (models, query) -> iterator models, query, true, reject
+  $not: (models, query) -> iterator models, query, false, reject
 
 
 # This method attempts to retrieve the result from the cache.
