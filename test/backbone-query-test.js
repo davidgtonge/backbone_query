@@ -53,14 +53,22 @@
     ]);
   };
 
-  test("Simple equals query", function() {
+  test("Equals query", function() {
     var a, result;
     a = create();
     result = a.query({
       title: "Home"
     });
     equal(result.length, 1);
-    return equal(result[0].get("title"), "Home");
+    equal(result[0].get("title"), "Home");
+    result = a.query({
+      colors: "blue"
+    });
+    equal(result.length, 2);
+    result = a.query({
+      colors: ["red", "blue"]
+    });
+    return equal(result.length, 1);
   });
 
   test("Simple equals query (no results)", function() {
@@ -783,6 +791,116 @@
     });
     equal(result.length, 2);
     return equal(result.models.length, result.length);
+  });
+
+  test("$elemMatch", function() {
+    var a, b, result, text_search;
+    a = new QueryCollection([
+      {
+        title: "Home",
+        comments: [
+          {
+            text: "I like this post"
+          }, {
+            text: "I love this post"
+          }, {
+            text: "I hate this post"
+          }
+        ]
+      }, {
+        title: "About",
+        comments: [
+          {
+            text: "I like this page"
+          }, {
+            text: "I love this page"
+          }, {
+            text: "I really like this page"
+          }
+        ]
+      }
+    ]);
+    b = new QueryCollection([
+      {
+        foo: [
+          {
+            shape: "square",
+            color: "purple",
+            thick: false
+          }, {
+            shape: "circle",
+            color: "red",
+            thick: true
+          }
+        ]
+      }, {
+        foo: [
+          {
+            shape: "square",
+            color: "red",
+            thick: true
+          }, {
+            shape: "circle",
+            color: "purple",
+            thick: false
+          }
+        ]
+      }
+    ]);
+    text_search = {
+      $likeI: "love"
+    };
+    result = a.query({
+      $or: {
+        comments: {
+          $elemMatch: {
+            text: text_search
+          }
+        },
+        title: text_search
+      }
+    });
+    equal(result.length, 2);
+    result = a.query({
+      $or: {
+        comments: {
+          $elemMatch: {
+            text: /post/
+          }
+        }
+      }
+    });
+    equal(result.length, 1);
+    result = a.query({
+      $or: {
+        comments: {
+          $elemMatch: {
+            text: /post/
+          }
+        },
+        title: /about/i
+      }
+    });
+    equal(result.length, 2);
+    result = a.query({
+      $or: {
+        comments: {
+          $elemMatch: {
+            text: /really/
+          }
+        }
+      }
+    });
+    equal(result.length, 1);
+    result = b.query({
+      foo: {
+        $elemMatch: {
+          shape: "square",
+          color: "purple"
+        }
+      }
+    });
+    return equal(result.length, 1);
   });
 
 }).call(this);

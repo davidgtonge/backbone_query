@@ -88,11 +88,23 @@ Query API
 ### $equal
 Performs a strict equality test using `===`. If no operator is provided and the query value isn't a regex then `$equal` is assumed.
 
+If the attribute in the model is an array then the query value is searched for in the array in the same way as `$contains`
+
+If the query value is an object (including array) then a deep comparison is performed using underscores `_.isEqual`
+
 ```javascript
 MyCollection.query({ title:"Test" });
 // Returns all models which have a "title" attribute of "Test"
 
 MyCollection.query({ title: {$equal:"Test"} }); // Same as above
+
+MyCollection.query({ colors: "red" });
+// Returns models which contain the value "red" in a "colors" attribute that is an array.
+
+MyCollection.query ({ colors: ["red", "yellow"] });
+// Returns models which contain a colors attribute with the array ["red", "yellow"]
+```
+
 ```
 
 ### $contains
@@ -233,6 +245,39 @@ For callbacks that use `this` rather than the model attribute, the key name supp
 effect on the results. If the only test you were performing was like the above test it would make more sense
 to simply use `MyCollection.filter`. However if you are performing other tests or are using the paging / sorting /
 caching options of backbone query, then this functionality is useful.
+
+### $elemMatch
+This operator allows you to perform queries in nested arrays similar to [MongoDB](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24elemMatch)
+For example you may have a collection of models in with this kind of data stucture:
+
+```js
+var Posts = new QueryCollection([
+    {title: "Home", comments:[
+      {text:"I like this post"},
+      {text:"I love this post"},
+      {text:"I hate this post"}
+    ]},
+    {title: "About", comments:[
+      {text:"I like this page"},
+      {text:"I love this page"},
+      {text:"I really like this page"}
+    ]}
+]);
+```
+To search for posts which have the text "really" in any of the comments you could search like this:
+
+```js
+Posts.query({
+  comments: {
+    $elemMatch: {
+      text: /really/i
+    }
+  }
+});
+```
+
+All of the operators above can be performed on `$elemMatch` queries, e.g. `$all`, `$size` or `$lt`.
+
 
 Combined Queries
 ================

@@ -23,11 +23,20 @@ create = ->
     {title:"Contact", colors:["red","blue"], likes:20, content: "Dummy content about PHP"}
   ]
 
-test "Simple equals query", ->
+
+test "Equals query", ->
   a = create()
   result = a.query title:"Home"
   equal result.length, 1
   equal result[0].get("title"), "Home"
+
+  result = a.query colors: "blue"
+  equal result.length, 2
+
+  result = a.query colors: ["red", "blue"]
+  equal result.length, 1
+
+
 
 test "Simple equals query (no results)", ->
   a = create()
@@ -334,3 +343,75 @@ test "Where method", ->
   result = a.where likes: $gt: 5
   equal result.length, 2
   equal result.models.length, result.length
+
+
+test "$elemMatch", ->
+  a = new QueryCollection [
+    {title: "Home", comments:[
+      {text:"I like this post"}
+      {text:"I love this post"}
+      {text:"I hate this post"}
+    ]}
+    {title: "About", comments:[
+      {text:"I like this page"}
+      {text:"I love this page"}
+      {text:"I really like this page"}
+    ]}
+  ]
+
+  b = new QueryCollection [
+    {foo: [
+      {shape: "square", color: "purple", thick: false}
+      {shape: "circle", color: "red", thick: true}
+    ]}
+    {foo: [
+      {shape: "square", color: "red", thick: true}
+      {shape: "circle", color: "purple", thick: false}
+    ]}
+  ]
+
+  text_search = {$likeI: "love"}
+
+  result = a.query $or:
+    comments:
+      $elemMatch:
+        text: text_search
+    title: text_search
+  equal result.length, 2
+
+  result = a.query $or:
+    comments:
+      $elemMatch:
+        text: /post/
+  equal result.length, 1
+
+  result = a.query $or:
+    comments:
+      $elemMatch:
+        text: /post/
+    title: /about/i
+  equal result.length, 2
+
+  result = a.query $or:
+    comments:
+      $elemMatch:
+        text: /really/
+  equal result.length, 1
+
+  result = b.query
+    foo:
+      $elemMatch:
+        shape:"square"
+        color:"purple"
+
+  equal result.length, 1
+  #equal result[0].get("foo")[0].shape, "square"
+  #equal result[0].get("foo")[0].color, "purple"
+  #equal result[0].get("foo")[0].thick, false
+
+
+
+
+
+
+

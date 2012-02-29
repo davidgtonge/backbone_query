@@ -14,16 +14,22 @@ parse_query = (raw_query) ->
       o.type = "$regex"
       o.value = query_param
     # If the query paramater is an object then extract the key and value
-    else if _(query_param).isObject()
+    else if _(query_param).isObject() and not _(query_param).isArray()
       for type, value of query_param
         # Before adding the query, its value is checked to make sure it is the right type
         if test_query_value type, value
           o.type = type
-          o.value = value
+          if type is "$elemMatch"
+            o.value = parse_query value
+          else
+            o.value = value
     # If the query_param is not an object or a regexp then revert to the default operator: $equal
     else
       o.type = "$equal"
       o.value = query_param
+
+    # For "$equal" queries with arrays or objects we need to perform a deep equal
+    if o.type is "$equal" and _(o.value).isObject() then o.type = "$oEqual"
     o)
 
 # Tests query value, to ensure that it is of the correct type
@@ -41,7 +47,7 @@ test_query_value = (type, value) ->
 test_model_attribute = (type, value) ->
   switch type
     when "$like", "$likeI", "$regex"  then _(value).isString()
-    when "$contains", "$all", "$any"  then _(value).isArray()
+    when "$contains", "$all", "$any", "$elemMatch" then _(value).isArray()
     when "$size"                      then _(value).isArray() or _(value).isString()
     when "$in", "$nin"                then value?
     else true
@@ -49,7 +55,10 @@ test_model_attribute = (type, value) ->
 # Perform the actual query logic for each query and each model/attribute
 perform_query = (type, value, attr, model) ->
   switch type
-    when "$equal"           then attr is value
+    when "$equal"
+      # If the attrubute is an array then search for the query value in the array the same as Mongo
+      if _(attr).isArray()  then value in attr else attr is value
+    when "$oEqual"          then _(attr).isEqual value
     when "$contains"        then value in attr
     when "$ne"              then attr isnt value
     when "$lt"              then attr < value
@@ -67,18 +76,19 @@ perform_query = (type, value, attr, model) ->
     when "$likeI"           then attr.toLowerCase().indexOf(value.toLowerCase()) isnt -1
     when "$regex"           then value.test attr
     when "$cb"              then value.call model, attr
+    when "$elemMatch"       then (iterator attr, value, false, filter, true).length > 0
     else false
 
 
 # The main iterator that actually applies the query
-iterator = (models, query, andOr, filterReject) ->
-  parsed_query = parse_query query
+iterator = (models, query, andOr, filterReject, subQuery = false) ->
+  parsed_query = if subQuery then query else parse_query query
   # The collections filter or reject method is used to iterate through each model in the collection
   filterReject models, (model) ->
     # For each model in the collection, iterate through the supplied queries
     for q in parsed_query
       # Retrieve the attribute value from the model
-      attr = model.get(q.key)
+      attr = if subQuery then model[q.key] else model.get(q.key)
       # Check if the attribute value is the right type (some operators need a string, or an array)
       test = test_model_attribute(q.type, attr)
       # If the attribute test is true, perform the query

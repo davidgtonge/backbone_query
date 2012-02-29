@@ -20,18 +20,23 @@ May be freely distributed according to MIT license.
       if (_.isRegExp(query_param)) {
         o.type = "$regex";
         o.value = query_param;
-      } else if (_(query_param).isObject()) {
+      } else if (_(query_param).isObject() && !_(query_param).isArray()) {
         for (type in query_param) {
           value = query_param[type];
           if (test_query_value(type, value)) {
             o.type = type;
-            o.value = value;
+            if (type === "$elemMatch") {
+              o.value = parse_query(value);
+            } else {
+              o.value = value;
+            }
           }
         }
       } else {
         o.type = "$equal";
         o.value = query_param;
       }
+      if (o.type === "$equal" && _(o.value).isObject()) o.type = "$oEqual";
       _results.push(o);
     }
     return _results;
@@ -69,6 +74,7 @@ May be freely distributed according to MIT license.
       case "$contains":
       case "$all":
       case "$any":
+      case "$elemMatch":
         return _(value).isArray();
       case "$size":
         return _(value).isArray() || _(value).isString();
@@ -83,7 +89,14 @@ May be freely distributed according to MIT license.
   perform_query = function(type, value, attr, model) {
     switch (type) {
       case "$equal":
-        return attr === value;
+        if (_(attr).isArray()) {
+          return __indexOf.call(attr, value) >= 0;
+        } else {
+          return attr === value;
+        }
+        break;
+      case "$oEqual":
+        return _(attr).isEqual(value);
       case "$contains":
         return __indexOf.call(attr, value) >= 0;
       case "$ne":
@@ -123,19 +136,22 @@ May be freely distributed according to MIT license.
         return value.test(attr);
       case "$cb":
         return value.call(model, attr);
+      case "$elemMatch":
+        return (iterator(attr, value, false, filter, true)).length > 0;
       default:
         return false;
     }
   };
 
-  iterator = function(models, query, andOr, filterReject) {
+  iterator = function(models, query, andOr, filterReject, subQuery) {
     var parsed_query;
-    parsed_query = parse_query(query);
+    if (subQuery == null) subQuery = false;
+    parsed_query = subQuery ? query : parse_query(query);
     return filterReject(models, function(model) {
       var attr, q, test, _i, _len;
       for (_i = 0, _len = parsed_query.length; _i < _len; _i++) {
         q = parsed_query[_i];
-        attr = model.get(q.key);
+        attr = subQuery ? model[q.key] : model.get(q.key);
         test = test_model_attribute(q.type, attr);
         if (test) test = perform_query(q.type, q.value, attr, model);
         if (andOr === test) return andOr;
