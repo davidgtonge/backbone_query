@@ -105,8 +105,6 @@ MyCollection.query ({ colors: ["red", "yellow"] });
 // Returns models which contain a colors attribute with the array ["red", "yellow"]
 ```
 
-```
-
 ### $contains
 Assumes that the model property is an array and searches for the query value in the array
 
