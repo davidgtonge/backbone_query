@@ -277,6 +277,42 @@ Posts.query({
 All of the operators above can be performed on `$elemMatch` queries, e.g. `$all`, `$size` or `$lt`.
 
 
+### $computed
+This operator allows you to perform queries on computed properties. For example you may want to perform a query
+for a persons full name, even though the first and last name are stored separately in your db / model.
+For example
+
+```js
+testModel = Backbone.Model.extend({
+  full_name: function() {
+    return (this.get('first_name')) + " " + (this.get('last_name'));
+  }
+});
+
+a = new testModel({
+  first_name: "Dave",
+  last_name: "Tonge"
+});
+
+b = new testModel({
+  first_name: "John",
+  last_name: "Smith"
+});
+
+MyCollection = new QueryCollection([a, b]);
+
+MyCollection.query({
+  full_name: { $computed: "Dave Tonge" }
+});
+// Returns the model with the computed `full_name` equal to Dave Tonge
+
+MyCollection.query({
+  full_name: { $computed: { $likeI: "john smi" } }
+});
+// Any of the previous operators can be used (including elemMatch is required)
+```
+
+
 Combined Queries
 ================
 

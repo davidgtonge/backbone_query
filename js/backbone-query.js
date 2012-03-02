@@ -6,11 +6,11 @@ May be freely distributed according to MIT license.
 */
 
 (function() {
-  var filter, get_cache, get_models, get_sorted_models, iterator, page_models, parse_query, perform_query, process_query, reject, sort_models, test_model_attribute, test_query_value,
+  var detect, filter, get_cache, get_models, get_sorted_models, iterator, page_models, parse_query, perform_query, process_query, reject, sort_models, test_model_attribute, test_query_value,
     __indexOf = Array.prototype.indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   parse_query = function(raw_query) {
-    var key, o, query_param, type, value, _results;
+    var key, o, q, query_param, type, value, _results;
     _results = [];
     for (key in raw_query) {
       query_param = raw_query[key];
@@ -25,10 +25,17 @@ May be freely distributed according to MIT license.
           value = query_param[type];
           if (test_query_value(type, value)) {
             o.type = type;
-            if (type === "$elemMatch") {
-              o.value = parse_query(value);
-            } else {
-              o.value = value;
+            switch (type) {
+              case "$elemMatch":
+                o.value = parse_query(value);
+                break;
+              case "$computed":
+                q = {};
+                q[key] = value;
+                o.value = parse_query(q);
+                break;
+              default:
+                o.value = value;
             }
           }
         }
@@ -86,7 +93,7 @@ May be freely distributed according to MIT license.
     }
   };
 
-  perform_query = function(type, value, attr, model) {
+  perform_query = function(type, value, attr, model, key) {
     switch (type) {
       case "$equal":
         if (_(attr).isArray()) {
@@ -137,7 +144,9 @@ May be freely distributed according to MIT license.
       case "$cb":
         return value.call(model, attr);
       case "$elemMatch":
-        return (iterator(attr, value, false, filter, true)).length > 0;
+        return iterator(attr, value, false, detect, "elemMatch");
+      case "$computed":
+        return iterator([model], value, false, detect, "computed");
       default:
         return false;
     }
@@ -151,9 +160,18 @@ May be freely distributed according to MIT license.
       var attr, q, test, _i, _len;
       for (_i = 0, _len = parsed_query.length; _i < _len; _i++) {
         q = parsed_query[_i];
-        attr = subQuery ? model[q.key] : model.get(q.key);
+        attr = (function() {
+          switch (subQuery) {
+            case "elemMatch":
+              return model[q.key];
+            case "computed":
+              return model[q.key]();
+            default:
+              return model.get(q.key);
+          }
+        })();
         test = test_model_attribute(q.type, attr);
-        if (test) test = perform_query(q.type, q.value, attr, model);
+        if (test) test = perform_query(q.type, q.value, attr, model, q.key);
         if (andOr === test) return andOr;
       }
       return !andOr;
@@ -161,23 +179,32 @@ May be freely distributed according to MIT license.
   };
 
   filter = function(array, test) {
-    var index, val, _i, _len, _results;
+    var val, _i, _len, _results;
     _results = [];
-    for (index = _i = 0, _len = array.length; _i < _len; index = ++_i) {
-      val = array[index];
+    for (_i = 0, _len = array.length; _i < _len; _i++) {
+      val = array[_i];
       if (test(val)) _results.push(val);
     }
     return _results;
   };
 
   reject = function(array, test) {
-    var index, val, _i, _len, _results;
+    var val, _i, _len, _results;
     _results = [];
-    for (index = _i = 0, _len = array.length; _i < _len; index = ++_i) {
-      val = array[index];
+    for (_i = 0, _len = array.length; _i < _len; _i++) {
+      val = array[_i];
       if (!test(val)) _results.push(val);
     }
     return _results;
+  };
+
+  detect = function(array, test) {
+    var val, _i, _len;
+    for (_i = 0, _len = array.length; _i < _len; _i++) {
+      val = array[_i];
+      if (test(val)) return true;
+    }
+    return false;
   };
 
   process_query = {

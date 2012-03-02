@@ -1,7 +1,10 @@
+
 if typeof require isnt "undefined"
   {QueryCollection} = require "../js/backbone-query.js"
+  Backbone = require "backbone"
 else
-  QueryCollection = Backbone.QueryCollection
+  QueryCollection = window.Backbone.QueryCollection
+  Backbone = window.Backbone
 
 # Helper functions that turn Qunit tests into nodeunit tests
 equals = []
@@ -343,6 +346,30 @@ test "Where method", ->
   result = a.where likes: $gt: 5
   equal result.length, 2
   equal result.models.length, result.length
+
+
+test "$computed", ->
+  class testModel extends Backbone.Model
+    full_name: -> "#{@get 'first_name'} #{@get 'last_name'}"
+
+  a = new testModel
+    first_name: "Dave"
+    last_name: "Tonge"
+  b = new testModel
+    first_name: "John"
+    last_name: "Smith"
+  c = new QueryCollection [a,b]
+
+  result = c.query
+    full_name: $computed: "Dave Tonge"
+
+  equal result.length, 1
+  equal result[0].get("first_name"), "Dave"
+
+  result = c.query
+    full_name: $computed: $likeI: "n sm"
+  equal result.length, 1
+  equal result[0].get("first_name"), "John"
 
 
 test "$elemMatch", ->

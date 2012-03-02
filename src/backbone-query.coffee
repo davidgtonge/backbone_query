@@ -19,10 +19,15 @@ parse_query = (raw_query) ->
         # Before adding the query, its value is checked to make sure it is the right type
         if test_query_value type, value
           o.type = type
-          if type is "$elemMatch"
-            o.value = parse_query value
-          else
-            o.value = value
+          switch type
+            when "$elemMatch"
+              o.value = parse_query value
+            when "$computed"
+              q = {}
+              q[key] = value
+              o.value = parse_query q
+            else
+              o.value = value
     # If the query_param is not an object or a regexp then revert to the default operator: $equal
     else
       o.type = "$equal"
@@ -53,7 +58,7 @@ test_model_attribute = (type, value) ->
     else true
 
 # Perform the actual query logic for each query and each model/attribute
-perform_query = (type, value, attr, model) ->
+perform_query = (type, value, attr, model, key) ->
   switch type
     when "$equal"
       # If the attrubute is an array then search for the query value in the array the same as Mongo
@@ -76,7 +81,8 @@ perform_query = (type, value, attr, model) ->
     when "$likeI"           then attr.toLowerCase().indexOf(value.toLowerCase()) isnt -1
     when "$regex"           then value.test attr
     when "$cb"              then value.call model, attr
-    when "$elemMatch"       then (iterator attr, value, false, filter, true).length > 0
+    when "$elemMatch"       then iterator attr, value, false, detect, "elemMatch"
+    when "$computed"        then iterator [model], value, false, detect, "computed"
     else false
 
 
@@ -88,11 +94,14 @@ iterator = (models, query, andOr, filterReject, subQuery = false) ->
     # For each model in the collection, iterate through the supplied queries
     for q in parsed_query
       # Retrieve the attribute value from the model
-      attr = if subQuery then model[q.key] else model.get(q.key)
+      attr = switch subQuery
+        when "elemMatch" then model[q.key]
+        when "computed" then model[q.key]()
+        else model.get(q.key)
       # Check if the attribute value is the right type (some operators need a string, or an array)
       test = test_model_attribute(q.type, attr)
       # If the attribute test is true, perform the query
-      if test then test = perform_query q.type, q.value, attr, model
+      if test then test = perform_query q.type, q.value, attr, model, q.key
       # If the query is an "or" query than as soon as a match is found we return "true"
       # Whereas if the query is an "and" query then we return "false" as soon as a match isn't found.
       return andOr if andOr is test
@@ -103,8 +112,12 @@ iterator = (models, query, andOr, filterReject, subQuery = false) ->
 
 # Custom Filter / Reject methods faster than underscore methods as use for loops
 # http://jsperf.com/filter-vs-for-loop2
-filter = (array, test) -> (val for val, index in array when test val)
-reject = (array, test) -> (val for val, index in array when not test val)
+filter = (array, test) -> (val for val in array when test val)
+reject = (array, test) -> (val for val in array when not test val)
+detect = (array, test) ->
+  for val in array
+    return true if test val
+  false
 
 # An object with or, and, nor and not methods
 process_query =

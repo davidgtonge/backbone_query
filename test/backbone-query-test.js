@@ -1,10 +1,14 @@
 (function() {
-  var QueryCollection, create, equals;
+  var Backbone, QueryCollection, create, equals,
+    __hasProp = Object.prototype.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor; child.__super__ = parent.prototype; return child; };
 
   if (typeof require !== "undefined") {
     QueryCollection = require("../js/backbone-query.js").QueryCollection;
+    Backbone = require("backbone");
   } else {
-    QueryCollection = Backbone.QueryCollection;
+    QueryCollection = window.Backbone.QueryCollection;
+    Backbone = window.Backbone;
   }
 
   equals = [];
@@ -791,6 +795,52 @@
     });
     equal(result.length, 2);
     return equal(result.models.length, result.length);
+  });
+
+  test("$computed", function() {
+    var a, b, c, result, testModel;
+    testModel = (function(_super) {
+
+      __extends(testModel, _super);
+
+      testModel.name = 'testModel';
+
+      function testModel() {
+        return testModel.__super__.constructor.apply(this, arguments);
+      }
+
+      testModel.prototype.full_name = function() {
+        return "" + (this.get('first_name')) + " " + (this.get('last_name'));
+      };
+
+      return testModel;
+
+    })(Backbone.Model);
+    a = new testModel({
+      first_name: "Dave",
+      last_name: "Tonge"
+    });
+    b = new testModel({
+      first_name: "John",
+      last_name: "Smith"
+    });
+    c = new QueryCollection([a, b]);
+    result = c.query({
+      full_name: {
+        $computed: "Dave Tonge"
+      }
+    });
+    equal(result.length, 1);
+    equal(result[0].get("first_name"), "Dave");
+    result = c.query({
+      full_name: {
+        $computed: {
+          $likeI: "n sm"
+        }
+      }
+    });
+    equal(result.length, 1);
+    return equal(result[0].get("first_name"), "John");
   });
 
   test("$elemMatch", function() {
