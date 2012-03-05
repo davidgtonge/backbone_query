@@ -20,7 +20,7 @@ parse_query = (raw_query) ->
         if test_query_value type, value
           o.type = type
           switch type
-            when "$elemMatch"
+            when "$elemMatch", "$relationMatch"
               o.value = parse_query value
             when "$computed"
               q = {}
@@ -55,6 +55,7 @@ test_model_attribute = (type, value) ->
     when "$contains", "$all", "$any", "$elemMatch" then _(value).isArray()
     when "$size"                      then _(value).isArray() or _(value).isString()
     when "$in", "$nin"                then value?
+    when "$relationMatch"             then value? and value.models
     else true
 
 # Perform the actual query logic for each query and each model/attribute
@@ -82,15 +83,16 @@ perform_query = (type, value, attr, model, key) ->
     when "$regex"           then value.test attr
     when "$cb"              then value.call model, attr
     when "$elemMatch"       then iterator attr, value, false, detect, "elemMatch"
+    when "$relationMatch"   then iterator attr.models, value, false, detect, "relationMatch"
     when "$computed"        then iterator [model], value, false, detect, "computed"
     else false
 
 
 # The main iterator that actually applies the query
-iterator = (models, query, andOr, filterReject, subQuery = false) ->
+iterator = (models, query, andOr, filterFunction, subQuery = false) ->
   parsed_query = if subQuery then query else parse_query query
   # The collections filter or reject method is used to iterate through each model in the collection
-  filterReject models, (model) ->
+  filterFunction models, (model) ->
     # For each model in the collection, iterate through the supplied queries
     for q in parsed_query
       # Retrieve the attribute value from the model
