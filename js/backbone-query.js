@@ -27,6 +27,7 @@ May be freely distributed according to MIT license.
             o.type = type;
             switch (type) {
               case "$elemMatch":
+              case "$relationMatch":
                 o.value = parse_query(value);
                 break;
               case "$computed":
@@ -88,6 +89,8 @@ May be freely distributed according to MIT license.
       case "$in":
       case "$nin":
         return value != null;
+      case "$relationMatch":
+        return (value != null) && value.models;
       default:
         return true;
     }
@@ -123,8 +126,8 @@ May be freely distributed according to MIT license.
       case "$nin":
         return __indexOf.call(value, attr) < 0;
       case "$all":
-        return _(attr).all(function(item) {
-          return __indexOf.call(value, item) >= 0;
+        return _(value).all(function(item) {
+          return __indexOf.call(attr, item) >= 0;
         });
       case "$any":
         return _(attr).any(function(item) {
@@ -145,6 +148,8 @@ May be freely distributed according to MIT license.
         return value.call(model, attr);
       case "$elemMatch":
         return iterator(attr, value, false, detect, "elemMatch");
+      case "$relationMatch":
+        return iterator(attr.models, value, false, detect, "relationMatch");
       case "$computed":
         return iterator([model], value, false, detect, "computed");
       default:
@@ -152,11 +157,11 @@ May be freely distributed according to MIT license.
     }
   };
 
-  iterator = function(models, query, andOr, filterReject, subQuery) {
+  iterator = function(models, query, andOr, filterFunction, subQuery) {
     var parsed_query;
     if (subQuery == null) subQuery = false;
     parsed_query = subQuery ? query : parse_query(query);
-    return filterReject(models, function(model) {
+    return filterFunction(models, function(model) {
       var attr, q, test, _i, _len;
       for (_i = 0, _len = parsed_query.length; _i < _len; _i++) {
         q = parsed_query[_i];

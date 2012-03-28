@@ -436,6 +436,22 @@ test "$elemMatch", ->
   #equal result[0].get("foo")[0].color, "purple"
   #equal result[0].get("foo")[0].thick, false
 
+test "$any and $all", ->
+  a = name: "test", tags1: ["red","yellow"], tags2: ["orange", "green", "red", "blue"]
+  b = name: "test1", tags1: ["purple","blue"], tags2: ["orange", "red", "blue"]
+  c = name: "test2", tags1: ["black","yellow"], tags2: ["green", "orange", "blue"]
+  d = name: "test3", tags1: ["red","yellow","blue"], tags2: ["green"]
+  e = new QueryCollection [a,b,c,d]
+
+  result = e.query
+    tags1: $any: ["red","purple"] # should match a, b, d
+    tags2: $all: ["orange","green"] # should match a, c
+
+  equal result.length, 1
+  equal result[0].get("name"), "test"
+
+
+
 
 
 

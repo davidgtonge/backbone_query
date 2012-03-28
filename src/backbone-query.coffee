@@ -74,7 +74,7 @@ perform_query = (type, value, attr, model, key) ->
     when "$between"         then value[0] < attr < value[1]
     when "$in"              then attr in value
     when "$nin"             then attr not in value
-    when "$all"             then _(attr).all (item) -> item in value
+    when "$all"             then _(value).all (item) -> item in attr
     when "$any"             then _(attr).any (item) -> item in value
     when "$size"            then attr.length is value
     when "$exists", "$has"  then attr? is value
