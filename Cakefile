@@ -1,5 +1,6 @@
 fs     = require 'fs'
 {exec} = require 'child_process'
+{spawn}= require 'child_process'
 
 task 'build', 'Build JS files from Coffee sources', ->
 
@@ -7,9 +8,14 @@ task 'build', 'Build JS files from Coffee sources', ->
     throw err if err
     console.log stdout + stderr
 
-  exec 'coffee -c test/backbone-query-test.coffee', (err, stdout, stderr) ->
+  exec 'coffee -cb test/backbone-query-test.coffee', (err, stdout, stderr) ->
     throw err if err
     console.log stdout + stderr
+
+task 'watch', 'Watch (auto-compile) backbone-query.coffee', ->
+  ps = spawn 'coffee', ['--watch', '--compile', '-o', 'js/', 'src/']
+  ps.stdout.on 'data', (data) -> process.stdout.write data
+  ps.stderr.on 'data', (data) -> process.stderr.write data
 
 task 'uglify', 'Minify and obfuscate', ->
   uglify = require 'uglify-js'
