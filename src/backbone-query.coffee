@@ -16,6 +16,10 @@ May be freely distributed according to MIT license.
       if _.isRegExp(query_param)
         o.type = "$regex"
         o.value = query_param
+      # Nested compound queries
+      else if key in ["$and", "$not", "$or", "$nor"]
+        o.type = key
+        o.value = query_param
       # If the query paramater is an object then extract the key and value
       else if _(query_param).isObject() and not _(query_param).isArray()
         for type, value of query_param
@@ -88,6 +92,10 @@ May be freely distributed according to MIT license.
       when "$elemMatch"       then iterator attr, value, false, detect, "elemMatch"
       when "$relationMatch"   then iterator attr.models, value, false, detect, "relationMatch"
       when "$computed"        then iterator [model], value, false, detect, "computed"
+      when "$and", "$or", "$nor", "$not"
+        # If the condition is satisfied, then `process_query` must return an unmodified collection
+        # In other words: If a collection with one element is passed, then the size of the returned collection is one
+        process_query[type]([model], value).length == 1
       else false
 
 
@@ -102,7 +110,11 @@ May be freely distributed according to MIT license.
         attr = switch subQuery
           when "elemMatch" then model[q.key]
           when "computed" then model[q.key]()
-          else model.get(q.key)
+          else
+            if q.key in ["$and", "$or", "$nor", "$not"]
+              q.key
+            else
+              model.get(q.key)
         # Check if the attribute value is the right type (some operators need a string, or an array)
         test = test_model_attribute(q.type, attr)
         # If the attribute test is true, perform the query
@@ -151,26 +163,8 @@ May be freely distributed according to MIT license.
 
   # This method get the unsorted results
   get_models = (collection, query) ->
-
-    # Iterate through the query keys to check for any of the compound methods
-    # The resulting array will have "$and" and "$not" first as it is better to use these
-    # operators first when performing a compound query as they are likely to return less results
-    compound_query = _.intersection ["$and", "$not", "$or", "$nor"], _(query).keys()
-
-    # Assign the collections models to a local variable to use in the following switch
-    models = collection.models
-
-    if compound_query.length is 0
-      # If no compound methods are found then use the "and" iterator
-      process_query.$and models, query
-    else
-      # Else iterate through the compound methods using underscore reduce
-      # The reduce iterator takes an array of models, performs the query and returns
-      # the matched models for the next query
-      reduce_iterator = (memo, query_type) ->
-        process_query[query_type] memo, query[query_type]
-
-      _.reduce compound_query, reduce_iterator, models
+    # Query using the "and" iterator.
+    process_query.$and collection.models, query
 
   # Gets the results and optionally sorts them
   get_sorted_models = (collection, query, options) ->

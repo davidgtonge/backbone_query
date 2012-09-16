@@ -26,6 +26,9 @@ May be freely distributed according to MIT license.
           if (_.isRegExp(query_param)) {
             o.type = "$regex";
             o.value = query_param;
+          } else if (key === "$and" || key === "$not" || key === "$or" || key === "$nor") {
+            o.type = key;
+            o.value = query_param;
           } else if (_(query_param).isObject() && !_(query_param).isArray()) {
             for (type in query_param) {
               value = query_param[type];
@@ -157,6 +160,11 @@ May be freely distributed according to MIT license.
             return iterator(attr.models, value, false, detect, "relationMatch");
           case "$computed":
             return iterator([model], value, false, detect, "computed");
+          case "$and":
+          case "$or":
+          case "$nor":
+          case "$not":
+            return process_query[type]([model], value).length === 1;
           default:
             return false;
         }
@@ -172,13 +180,18 @@ May be freely distributed according to MIT license.
           for (_i = 0, _len = parsed_query.length; _i < _len; _i++) {
             q = parsed_query[_i];
             attr = (function() {
+              var _ref;
               switch (subQuery) {
                 case "elemMatch":
                   return model[q.key];
                 case "computed":
                   return model[q.key]();
                 default:
-                  return model.get(q.key);
+                  if ((_ref = q.key) === "$and" || _ref === "$or" || _ref === "$nor" || _ref === "$not") {
+                    return q.key;
+                  } else {
+                    return model.get(q.key);
+                  }
               }
             })();
             test = test_model_attribute(q.type, attr);
@@ -250,17 +263,7 @@ May be freely distributed according to MIT license.
         return models;
       };
       get_models = function(collection, query) {
-        var compound_query, models, reduce_iterator;
-        compound_query = _.intersection(["$and", "$not", "$or", "$nor"], _(query).keys());
-        models = collection.models;
-        if (compound_query.length === 0) {
-          return process_query.$and(models, query);
-        } else {
-          reduce_iterator = function(memo, query_type) {
-            return process_query[query_type](memo, query[query_type]);
-          };
-          return _.reduce(compound_query, reduce_iterator, models);
-        }
+        return process_query.$and(collection.models, query);
       };
       get_sorted_models = function(collection, query, options) {
         var models;

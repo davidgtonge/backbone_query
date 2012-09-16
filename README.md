@@ -329,6 +329,7 @@ MyCollection.query({ title: {$like: "News"}, likes: {$gt: 10} });
 ```
 
 ### $or
+Inclusive "or"
 
 ```js
 MyCollection.query({ $or: { title: {$like: "News"}, likes: {$gt: 10}}});
@@ -475,6 +476,11 @@ var MyCollection = Backbone.QueryCollection.extend({
 
 ```
 
+
+Building and testing
+====================
+To automatically compile Backbone-query, run `cake watch`. Then, `src/backbone-query.coffee` is automatically compiled to `js/backbone-query.js`. When you're ready to push updates, run `cake build` and `cake uglify`.  
+To add new unit tests, modify `tests/backbone-query.coffee`, and compile it using `coffee --bare --compile backbone-query.coffee` or `cake build`. Tests can be run via the browser, or using `cake test`.  
 
 Author
 ======
