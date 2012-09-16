@@ -7,7 +7,7 @@ task 'build', 'Build JS files from Coffee sources', ->
     throw err if err
     console.log stdout + stderr
 
-  exec 'coffee -c test/backbone-query-test.coffee', (err, stdout, stderr) ->
+  exec 'coffee -cb test/backbone-query-test.coffee', (err, stdout, stderr) ->
     throw err if err
     console.log stdout + stderr
 

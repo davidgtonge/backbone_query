@@ -1,3 +1,5 @@
+# Compile this using the compile and bare flag:
+# coffee -bc backbone-query-test.coffee
 
 if typeof require isnt "undefined"
   {QueryCollection} = require "../js/backbone-query.js"
@@ -9,15 +11,15 @@ else
 # Helper functions that turn Qunit tests into nodeunit tests
 equals = []
 
-test ?= (name, test_cb) ->
-  exports[name] = (testObj) ->
+unless test? then test = (name, test_cb) ->
+  (if exports? then exports else window )[name] = (testObj) ->
     equals = []
     test_cb()
     for result in equals
       testObj.equal result[0], result[1]
     testObj.done()
 
-equal ?= (real, expected) -> equals.push [real, expected]
+unless equal? then equal = (real, expected) -> equals.push [real, expected]
 
 create = ->
   new QueryCollection [
@@ -450,9 +452,28 @@ test "$any and $all", ->
   equal result.length, 1
   equal result[0].get("name"), "test"
 
+test "Explicit $and combined with matching $or must return the correct number of items", ->
+  Col = new Backbone.QueryCollection [
+    {equ:'ok', same: 'ok'},
+    {equ:'ok', same: 'ok'}
+  ]
+  result = Col.query
+    $and:
+      equ: 'ok'         # Matches both items
+      $or:
+        same: 'ok'      # Matches both items
+  equal result.length, 2
 
-
-
+test "Implicit $and consisting of non-matching subquery and $or must return empty list", ->
+  Col = new Backbone.QueryCollection [
+    {equ:'ok', same: 'ok'},
+    {equ:'ok', same: 'ok'}
+  ]
+  result = Col.query
+    equ: 'bogus'        # Matches nothing
+    $or:
+      same: 'ok'        # Matches all items, but due to implicit $and, this subquery should not affect the result
+  equal result.length, 0
 
 
 
