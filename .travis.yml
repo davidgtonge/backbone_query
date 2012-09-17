@@ -6,4 +6,4 @@ before_script:
   - "npm install"
 
 script:
-  - "node_modules/.bin/cake test"
+  - "node_modules/.bin/mocha"

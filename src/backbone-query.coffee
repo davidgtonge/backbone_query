@@ -4,41 +4,106 @@ Backbone Query - A lightweight query API for Backbone Collections
 May be freely distributed according to MIT license.
 ###
 
-# This function parses the query and converts it into an array of objects.
-# Each object has a key (model property), type (query type - $gt, $like...) and value (mixed).
-parse_query = (raw_query) ->
-  (for key, query_param of raw_query
-    o = {key}
-    # Test for Regexs as they can be supplied without an operator
-    if _.isRegExp(query_param)
-      o.type = "$regex"
-      o.value = query_param
-    # If the query paramater is an object then extract the key and value
-    else if _(query_param).isObject() and not _(query_param).isArray()
-      for type, value of query_param
-        # Before adding the query, its value is checked to make sure it is the right type
-        if test_query_value type, value
-          o.type = type
-          switch type
-            when "$elemMatch", "$relationMatch"
-              o.value = parse_query value
-            when "$computed"
-              q = {}
-              q[key] = value
-              o.value = parse_query q
-            else
-              o.value = value
-    # If the query_param is not an object or a regexp then revert to the default operator: $equal
-    else
-      o.type = "$equal"
-      o.value = query_param
 
-    # For "$equal" queries with arrays or objects we need to perform a deep equal
-    if o.type is "$equal" and _(o.value).isObject() then o.type = "$oEqual"
+### UTILS ###
+
+# Custom Filter / Reject methods faster than underscore methods as use for loops
+# http://jsperf.com/filter-vs-for-loop2
+filter = (array, test) -> (val for val in array when test val)
+reject = (array, test) -> (val for val in array when not test val)
+detect = (array, test) ->
+  for val in array
+    return true if test val
+  false
+
+# Utility Function to turn a list of values into an object
+makeObj = (args...)->
+  o = {}
+  current = o
+  while args.length
+    key = args.shift()
+    val = (if args.length is 1 then args.shift() else {})
+    current = current[key] = val
+  o
+
+# Get the type as a string
+getType = (item) ->
+  return "$regex" if _.isRegExp(item)
+  return "$date" if _.isDate(item)
+  return "object" if _.isObject(item) and not _.isArray(item)
+  return "array" if _.isArray(item)
+  return "string" if _.isString(item)
+  return "number" if _.isNumber(item)
+  return "boolean" if _.isBoolean(item)
+  return "function" if _.isFunction(item)
+  false
+
+###
+Function to parse raw queries
+@param {mixed} raw query
+@return {array} parsed query
+
+Allows queries of the following forms:
+query
+  name: "test"
+  id: $gte: 10
+
+query [
+  {name:"test"}
+  {id:$gte:10}
+]
+###
+parseQuery = (rawQuery) ->
+
+  if _.isArray(rawQuery)
+    queryArray = rawQuery
+  else
+    queryArray = (makeObj(key, val) for own key, val of rawQuery)
+
+  (for query in queryArray
+    for own key, queryParam of query
+      o = {key}
+      paramType = getType(queryParam)
+      switch paramType
+        # Test for Regexs and Dates as they can be supplied without an operator
+        when "$regex", "$date"
+          o.type = paramType
+          o.value = queryParam
+
+        # If the query paramater is an object then extract the key and value
+        when "object"
+          if key in ["$and", "$or", "$nor", "$not"]
+            o.value = parseQuery(queryParam)
+            o.type = key
+            o.key = null
+          else
+            for type, value of queryParam
+              # Before adding the query, its value is checked to make sure it is the right type
+              if testQueryValue type, value
+                o.type = type
+                switch type
+                  when "$elemMatch", "$relationMatch"
+                    o.value = parseQuery value
+                  when "$computed"
+                    q = makeObj(key,value)
+                    o.value = parseQuery q
+                  else
+                    o.value = value
+
+        # If the query_param is not an object or a regexp then revert to the default operator: $equal
+        else
+          o.type = "$equal"
+          o.value = queryParam
+
+      # For "$equal" queries with arrays or objects we need to perform a deep equal
+      if (o.type is "$equal") and (paramType in ["object","array"])
+        o.type = "$oEqual"
     o)
 
+
+
 # Tests query value, to ensure that it is of the correct type
-test_query_value = (type, value) ->
+testQueryValue = (type, value) ->
   switch type
     when "$in","$nin","$all", "$any"  then _(value).isArray()
     when "$size"                      then _(value).isNumber()
@@ -49,7 +114,7 @@ test_query_value = (type, value) ->
     else true
 
 # Test each attribute that is being tested to ensure that is of the correct type
-test_model_attribute = (type, value) ->
+testModelAttribute = (type, value) ->
   switch type
     when "$like", "$likeI", "$regex"  then _(value).isString()
     when "$contains", "$all", "$any", "$elemMatch" then _(value).isArray()
@@ -59,7 +124,7 @@ test_model_attribute = (type, value) ->
     else true
 
 # Perform the actual query logic for each query and each model/attribute
-perform_query = (type, value, attr, model, key) ->
+performQuery = (type, value, attr, model, key) ->
   switch type
     when "$equal"
       # If the attrubute is an array then search for the query value in the array the same as Mongo
@@ -85,25 +150,27 @@ perform_query = (type, value, attr, model, key) ->
     when "$elemMatch"       then iterator attr, value, false, detect, "elemMatch"
     when "$relationMatch"   then iterator attr.models, value, false, detect, "relationMatch"
     when "$computed"        then iterator [model], value, false, detect, "computed"
+    when "$and", "$or", "$nor", "$not"
+      (processQuery[type]([model], value)).length
     else false
 
 
 # The main iterator that actually applies the query
 iterator = (models, query, andOr, filterFunction, subQuery = false) ->
-  parsed_query = if subQuery then query else parse_query query
+  parsedQuery = if subQuery then query else parseQuery query
   # The collections filter or reject method is used to iterate through each model in the collection
   filterFunction models, (model) ->
     # For each model in the collection, iterate through the supplied queries
-    for q in parsed_query
+    for q in parsedQuery
       # Retrieve the attribute value from the model
       attr = switch subQuery
         when "elemMatch" then model[q.key]
         when "computed" then model[q.key]()
         else model.get(q.key)
       # Check if the attribute value is the right type (some operators need a string, or an array)
-      test = test_model_attribute(q.type, attr)
+      test = testModelAttribute(q.type, attr)
       # If the attribute test is true, perform the query
-      if test then test = perform_query q.type, q.value, attr, model, q.key
+      if test then test = performQuery q.type, q.value, attr, model, q.key
       # If the query is an "or" query than as soon as a match is found we return "true"
       # Whereas if the query is an "and" query then we return "false" as soon as a match isn't found.
       return andOr if andOr is test
@@ -112,17 +179,10 @@ iterator = (models, query, andOr, filterFunction, subQuery = false) ->
     # For an "and" query, if all the queries are true, then we return true
     not andOr
 
-# Custom Filter / Reject methods faster than underscore methods as use for loops
-# http://jsperf.com/filter-vs-for-loop2
-filter = (array, test) -> (val for val in array when test val)
-reject = (array, test) -> (val for val in array when not test val)
-detect = (array, test) ->
-  for val in array
-    return true if test val
-  false
+
 
 # An object with or, and, nor and not methods
-process_query =
+processQuery =
   $and: (models, query) -> iterator models, query, false, filter
   $or: (models, query) -> iterator models, query, true, filter
   $nor: (models, query) -> iterator models, query, true, reject
@@ -132,51 +192,61 @@ process_query =
 # This method attempts to retrieve the result from the cache.
 # If no match is found in the cache, then the query is run and
 # the results are saved in the cache
-get_cache = (collection, query, options) ->
+getCache = (collection, query, options) ->
   # Convert the query to a string to use as a key in the cache
-  query_string = JSON.stringify query
+  queryString = JSON.stringify query
   # Create cache if doesn't exist
-  cache = collection._query_cache ?= {}
+  cache = collection._queryCache ?= {}
   # Retrieve cached results
-  models = cache[query_string]
+  models = cache[queryString]
   # If no results are retrieved then use the get_models method and cache the result
   unless models
-    models = get_sorted_models collection, query, options
-    cache[query_string] = models
+    models = getSortedModels collection, query, options
+    cache[queryString] = models
   # Return the results
   models
 
 # This method get the unsorted results
-get_models = (collection, query) ->
+getModels = (collection, query) ->
 
   # Iterate through the query keys to check for any of the compound methods
   # The resulting array will have "$and" and "$not" first as it is better to use these
   # operators first when performing a compound query as they are likely to return less results
-  compound_query = _.intersection ["$and", "$not", "$or", "$nor"], _(query).keys()
+  queryKeys =  _(query).keys()
+  compoundKeys = ["$and", "$not", "$or", "$nor"]
+  compoundQuery = _.intersection compoundKeys, queryKeys
 
-  # Assign the collections models to a local variable to use in the following switch
-  models = collection.models
-
-  if compound_query.length is 0
+  if compoundQuery.length is 0
     # If no compound methods are found then use the "and" iterator
-    process_query.$and models, query
+    processQuery.$and collection.models, query
   else
-    # Else iterate through the compound methods using underscore reduce
+    # Detect if there is an implicit $and compundQuery operator
+    if compoundQuery.length isnt queryKeys.length
+      # Add the and compund query operator (with a sanity check that it doesn't exist)
+      if "$and" not in compoundQuery
+        query.$and = {}
+        compoundQuery.unshift "$and"
+      for own key, val of query when key not in compoundKeys
+        query.$and[key] = val
+        delete query[key]
+
+
+    # Iterate through the compound methods using underscore reduce
     # The reduce iterator takes an array of models, performs the query and returns
     # the matched models for the next query
-    reduce_iterator = (memo, query_type) ->
-      process_query[query_type] memo, query[query_type]
+    reduceIterator = (memo, queryType) ->
+      processQuery[queryType] memo, query[queryType]
 
-    _.reduce compound_query, reduce_iterator, models
+    _.reduce compoundQuery, reduceIterator, collection.models
 
 # Gets the results and optionally sorts them
-get_sorted_models = (collection, query, options) ->
-  models = get_models collection, query
-  if options.sortBy then models = sort_models models, options
+getSortedModels = (collection, query, options) ->
+  models = getModels collection, query
+  if options.sortBy then models = sortModels models, options
   models
 
 # Sorts models either be a model attribute or with a callback
-sort_models = (models, options) ->
+sortModels = (models, options) ->
   # If the sortBy param is a string then we sort according to the model attribute with that string as a key
   if _(options.sortBy).isString()
     models = _(models).sortBy (model) -> model.get(options.sortBy)
@@ -191,7 +261,7 @@ sort_models = (models, options) ->
   models
 
 # Slices the results set according to the supplied options
-page_models = (models, options) ->
+pageModels = (models, options) ->
   # Expects object in the form: {limit: num, offset: num,  page: num, pager:callback}
   if options.offset then start = options.offset
   else if options.page then start = (options.page - 1) * options.limit
@@ -210,8 +280,8 @@ page_models = (models, options) ->
 
 # If used on the server, then Backbone and Underscore are loaded as modules
 unless typeof require is 'undefined'
-  _ ?= require 'underscore'
-  Backbone ?= require 'backbone'
+  _ = require 'underscore'
+  Backbone = require 'backbone'
 
 Backbone.QueryCollection = Backbone.Collection.extend
 
@@ -220,23 +290,25 @@ Backbone.QueryCollection = Backbone.Collection.extend
 
     # Retrieve matching models using the supplied query
     if options.cache
-      models = get_cache @, query, options
+      models = getCache @, query, options
     else
-      models = get_sorted_models @, query, options
+      models = getSortedModels @, query, options
 
     # If a limit param is specified than slice the results
-    if options.limit then models = page_models models, options
+    if options.limit then models = pageModels models, options
 
     # Return the results
     models
 
+  findOne: (query) -> @query(query)[0]
+
   # Where method wraps query and returns a new collection
-  where: (params, options = {})->
+  whereBy: (params, options = {})->
     new @constructor @query params, options
 
   # Helper method to reset the query cache
   # Defined as a separate method to make it easy to bind to collection's change/add/remove events
-  reset_query_cache: -> @_query_cache = {}
+  resetQueryCache: -> @_queryCache = {}
 
 # On the server the new Query Collection is added to exports
 unless typeof exports is "undefined"
