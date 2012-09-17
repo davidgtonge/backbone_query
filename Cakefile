@@ -213,9 +213,6 @@ mocha = (options, callback) ->
   if typeof options is 'function'
     callback = options
     options = []
-  # add coffee directive
-  options.push '--coffee'
-  options.push 'coffee:coffee-script'
 
   launch 'mocha', options, callback
 
@@ -232,11 +229,11 @@ task 'uglify', 'Minify and obfuscate', ->
   jsp = uglify.parser
   pro = uglify.uglify
 
-  contents  = fs.readFileSync "js/backbone-query.js", 'utf8'
+  contents  = fs.readFileSync "lib/backbone-query.js", 'utf8'
 
   ast = jsp.parse contents # parse code and get the initial AST
   ast = pro.ast_mangle ast # get a new AST with mangled names
   ast = pro.ast_squeeze ast # get an AST with compression optimizations
   final_code = pro.gen_code ast # compressed code here
 
-  fs.writeFile 'js/backbone-query.min.js', final_code
+  fs.writeFile 'lib/backbone-query.min.js', final_code

@@ -21,10 +21,14 @@ You can install with NPM: `npm install backbone-query`
 Then simply require in your project: `QueryCollection = require("backbone-query").QueryCollection`
 
 
-Your collections will now have two new methods: `query` and `where`. Both methods accept 2 arguments - 
-a query object and an options object. The `query` method returns an array of models, but the `where` method
+Your collections will now have two new methods: `query` and `whereBy`. Both methods accept 2 arguments -
+a query object and an options object. The `query` method returns an array of models, but the `whereBy` method
 returns a new collection and is therefore useful where you would like to chain multiple collection 
-methods / where queries (thanks to @cezary). The following are some basic examples:
+methods / whereBy queries (thanks to @cezary).
+
+The library also supports nested compound queries and is AMD compatible (thanks to @Rob--W).
+
+The following are some basic examples:
 
 ```js
 MyCollection.query({ 
@@ -71,14 +75,14 @@ MyCollection.query
     colors: $contains: "yellow"
 ```
 
-Another CoffeeScript example, this time using `where` rather than `query`
+Another CoffeeScript example, this time using `whereBy` rather than `query`
 
 ```coffeescript
 query = 
   $likes: $lt: 10
   $downloads: $gt: 20
   
-MyCollection.where(query).my_custom_collection_method()
+MyCollection.whereBy(query).my_custom_collection_method()
 ```
 
 
@@ -350,6 +354,18 @@ The opposite of `$and`
 MyCollection.query({ $not: { title: {$like: "News"}, likes: {$gt: 10}}});
 // Returns all models that don't contain "News" in the title AND DON'T have more than 10 likes.
 ```
+
+If you need to perform multiple queries on the same key, then you can supply the query as an array:
+```js
+MyCollection.query({
+    $or:[
+        {title:"News"},
+        {title:"About"}
+    ]
+});
+// Returns all models with the title "News" or "About".
+```
+
 
 Compound Queries
 ================

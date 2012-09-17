@@ -15,7 +15,7 @@
 }
     , "devDependencies": {
     "coffee-script" : ">=1.x.x"
-    ,"moacha": ""
+    ,"mocha": ""
     ,"uglify-js": "1.2.2"
 }
     , "scripts": {
