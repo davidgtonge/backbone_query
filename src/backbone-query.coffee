@@ -55,7 +55,7 @@ May be freely distributed according to MIT license.
     {id:$gte:10}
   ]
   ###
-  parseQuery = (rawQuery) ->
+  parseSubQuery = (rawQuery) ->
 
     if _.isArray(rawQuery)
       queryArray = rawQuery
@@ -75,7 +75,7 @@ May be freely distributed according to MIT license.
           # If the query paramater is an object then extract the key and value
           when "object"
             if key in ["$and", "$or", "$nor", "$not"]
-              o.value = queryParam
+              o.value = parseSubQuery queryParam
               o.type = key
               o.key = null
             else
@@ -88,7 +88,7 @@ May be freely distributed according to MIT license.
                       o.value = parseQuery value
                     when "$computed"
                       q = makeObj(key,value)
-                      o.value = parseQuery q
+                      o.value = parseSubQuery q
                     else
                       o.value = value
 
@@ -129,7 +129,7 @@ May be freely distributed according to MIT license.
   performQuery = (type, value, attr, model, key) ->
     switch type
       when "$equal"
-        # If the attrubute is an array then search for the query value in the array the same as Mongo
+        # If the attribute is an array then search for the query value in the array the same as Mongo
         if _(attr).isArray()  then value in attr else attr is value
       when "$oEqual"          then _(attr).isEqual value
       when "$contains"        then value in attr
@@ -149,8 +149,8 @@ May be freely distributed according to MIT license.
       when "$likeI"           then attr.toLowerCase().indexOf(value.toLowerCase()) isnt -1
       when "$regex"           then value.test attr
       when "$cb"              then value.call model, attr
-      when "$elemMatch"       then iterator attr, value, false, detect, "elemMatch"
-      when "$relationMatch"   then iterator attr.models, value, false, detect, "relationMatch"
+      when "$elemMatch"       then (runQuery(attr,value,"elemMatch")).length > 0
+      when "$relationMatch"   then (runQuery(attr.models,value,"relationMatch")).length > 0
       when "$computed"        then iterator [model], value, false, detect, "computed"
       when "$and", "$or", "$nor", "$not"
         (processQuery[type]([model], value)).length is 1
@@ -158,14 +158,13 @@ May be freely distributed according to MIT license.
 
 
   # The main iterator that actually applies the query
-  iterator = (models, query, andOr, filterFunction, subQuery = false) ->
-    parsedQuery = if subQuery then query else parseQuery query
+  iterator = (models, query, andOr, filterFunction, itemType = false) ->
     # The collections filter or reject method is used to iterate through each model in the collection
     filterFunction models, (model) ->
       # For each model in the collection, iterate through the supplied queries
-      for q in parsedQuery
+      for q in query
         # Retrieve the attribute value from the model
-        attr = switch subQuery
+        attr = switch itemType
           when "elemMatch" then model[q.key]
           when "computed" then model[q.key]()
           else model.get(q.key)
@@ -185,10 +184,38 @@ May be freely distributed according to MIT license.
 
   # An object with or, and, nor and not methods
   processQuery =
-    $and: (models, query) -> iterator models, query, false, filter
-    $or: (models, query) -> iterator models, query, true, filter
-    $nor: (models, query) -> iterator models, query, true, reject
-    $not: (models, query) -> iterator models, query, false, reject
+    $and: (models, query, itemType) -> iterator models, query, false, filter, itemType
+    $or: (models, query, itemType) -> iterator models, query, true, filter, itemType
+    $nor: (models, query, itemType) -> iterator models, query, true, reject, itemType
+    $not: (models, query, itemType) -> iterator models, query, false, reject, itemType
+
+  parseQuery = (query) ->
+    queryKeys =  _(query).keys()
+    compoundKeys = ["$and", "$not", "$or", "$nor"]
+    compoundQuery = _.intersection compoundKeys, queryKeys
+
+    # If no compound methods are found then use the "and" iterator
+    if compoundQuery.length is 0
+      return [{type:"$and", parsedQuery:parseSubQuery(query)}]
+    else
+      # Detect if there is an implicit $and compundQuery operator
+      if compoundQuery.length isnt queryKeys.length
+        # Add the and compund query operator (with a sanity check that it doesn't exist)
+        if "$and" not in compoundQuery
+          query.$and = {}
+          compoundQuery.unshift "$and"
+        for own key, val of query when key not in compoundKeys
+          query.$and[key] = val
+          delete query[key]
+      return (for type in compoundQuery
+        {type, parsedQuery:parseSubQuery(query[type])})
+
+
+  runQuery = (items, query, itemType) ->
+    query = parseQuery(query) unless itemType
+    reduceIterator = (memo, queryItem) ->
+      processQuery[queryItem.type] memo, queryItem.parsedQuery, itemType
+    _.reduce query, reduceIterator, items
 
 
   # This method attempts to retrieve the result from the cache.
@@ -208,42 +235,10 @@ May be freely distributed according to MIT license.
     # Return the results
     models
 
-  # This method get the unsorted results
-  getModels = (collection, query) ->
-
-    # Iterate through the query keys to check for any of the compound methods
-    # The resulting array will have "$and" and "$not" first as it is better to use these
-    # operators first when performing a compound query as they are likely to return less results
-    queryKeys =  _(query).keys()
-    compoundKeys = ["$and", "$not", "$or", "$nor"]
-    compoundQuery = _.intersection compoundKeys, queryKeys
-
-    if compoundQuery.length is 0
-      # If no compound methods are found then use the "and" iterator
-      processQuery.$and collection.models, query
-    else
-      # Detect if there is an implicit $and compundQuery operator
-      if compoundQuery.length isnt queryKeys.length
-        # Add the and compund query operator (with a sanity check that it doesn't exist)
-        if "$and" not in compoundQuery
-          query.$and = {}
-          compoundQuery.unshift "$and"
-        for own key, val of query when key not in compoundKeys
-          query.$and[key] = val
-          delete query[key]
-
-
-      # Iterate through the compound methods using underscore reduce
-      # The reduce iterator takes an array of models, performs the query and returns
-      # the matched models for the next query
-      reduceIterator = (memo, queryType) ->
-        processQuery[queryType] memo, query[queryType]
-
-      _.reduce compoundQuery, reduceIterator, collection.models
 
   # Gets the results and optionally sorts them
   getSortedModels = (collection, query, options) ->
-    models = getModels collection, query
+    models = runQuery(collection.models, query)
     if options.sortBy then models = sortModels models, options
     models
 

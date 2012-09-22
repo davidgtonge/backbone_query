@@ -279,6 +279,22 @@ Posts.query({
 ```
 
 All of the operators above can be performed on `$elemMatch` queries, e.g. `$all`, `$size` or `$lt`.
+`$elemMatch` queries also accept compound operators, for example this query searches for all posts that
+have at least one comment without the word "really" and with the word "totally".
+```js
+Posts.query({
+  comments: {
+    $elemMatch: {
+      $not: {
+        text: /really/i
+      },
+      $and: {
+        text: /totally/i
+      }
+    }
+  }
+});
+```
 
 
 ### $computed

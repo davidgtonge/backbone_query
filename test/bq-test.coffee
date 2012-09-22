@@ -447,6 +447,28 @@ describe "Backbone Query Tests", ->
     assert.equal result.length, 1
     assert.equal result[0].get("name"), "test"
 
+  it "$elemMatch - compound queries", ->
+    a = new QueryCollection [
+      {title: "Home", comments:[
+        {text:"I like this post"}
+        {text:"I love this post"}
+        {text:"I hate this post"}
+      ]}
+      {title: "About", comments:[
+        {text:"I like this page"}
+        {text:"I love this page"}
+        {text:"I really like this page"}
+      ]}
+    ]
+
+    result = a.query
+      comments:
+        $elemMatch:
+          $not:
+            text:/page/
+
+    assert.equal result.length, 1
+
 
   # Test from RobW - https://github.com/Rob--W
   it "Explicit $and combined with matching $or must return the correct number of items", ->
