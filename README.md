@@ -144,7 +144,7 @@ MyCollection.query({ likes: {$gte:10} });
 To check if a value is in-between 2 query values use the $between operator and supply an array with the min and max value
 
 ```js
-MyCollection.query({ likes: {$between:[5,15} });
+MyCollection.query({ likes: {$between:[5,15]} });
 // Returns all models which have a "likes" attribute of greater than 5 and less then 15
 ```
 
@@ -320,7 +320,7 @@ MyCollection.query({
 Combined Queries
 ================
 
-Multiple queries can be combined together. By default all supplied queries must be matched `$and`. However it is possible
+Multiple queries can be combined together. By default all supplied queries use the `$and` operator. However it is possible
 to specify either `$or`, `$nor`, `$not` to implement alternate logic.
 
 ### $and
