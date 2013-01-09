@@ -1,24 +1,44 @@
 {
-    "name": "backbone-query"
-    , "description": "Lightweight Query API for Backbone Collections"
-    , "version": "0.2.0"
-    , "author": "Dave Tonge <dave@simplecreativity.co.uk> (https://github.com/davidgtonge)"
-    , "tags": ["backbone", "underscore", "mongo", "query"]
-    , "main": "./lib/backbone-query"
-    , "repository": {
-        "type": "git"
-    ,   "url": "https://davidgtonge@github.com/davidgtonge/backbone_query.git"
+    "name": "backbone-query",
+    "description": "Lightweight Query API for Backbone Collections",
+    "version": "0.2.3",
+    "author": "Dave Tonge <dave@simplecreativity.co.uk> (https://github.com/davidgtonge)",
+    "tags": [
+        "backbone",
+        "underscore",
+        "mongo",
+        "query"
+    ],
+    "main": "./backbone-query",
+    "repository": {
+        "type": "git",
+        "url": "https://davidgtonge@github.com/davidgtonge/backbone_query.git"
+    },
+    "dependencies": {
+        "backbone": ">=0.5.x",
+        "underscore": ">=1.1.x"
+    },
+    "devDependencies": {
+        "coffee-script": ">=1.x.x",
+        "mocha": "",
+        "uglify-js": "1.2.2"
+    },
+    "jam": {
+        "dependencies": {
+            "underscore": "*",
+            "backbone": "*",
+            "jquery": "*"
+        },
+        "include": ["backbone-query.js"],
+
+        "main": "backbone-query.js",
+
+        "shim": {
+            "deps": ["jquery", "backbone", "underscore"],
+            "exports": "Backbone.QueryCollection"
+        }
+    },
+    "scripts": {
+        "test": "mocha"
     }
-    , "dependencies": {
-      "backbone": ">=0.5.x"
-    , "underscore": ">=1.1.x"
-}
-    , "devDependencies": {
-    "coffee-script" : ">=1.x.x"
-    ,"mocha": ""
-    ,"uglify-js": "1.2.2"
-}
-    , "scripts": {
-    "test": "mocha"
-}
 }

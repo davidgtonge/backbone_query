@@ -8,7 +8,7 @@
 # * docs  - generates annotated documentation using docco
 # * clean - clean generated .js files
 files = [
-  'lib'
+  '.'
   'src'
 ]
 
@@ -229,11 +229,11 @@ task 'uglify', 'Minify and obfuscate', ->
   jsp = uglify.parser
   pro = uglify.uglify
 
-  contents  = fs.readFileSync "lib/backbone-query.js", 'utf8'
+  contents  = fs.readFileSync "backbone-query.js", 'utf8'
 
   ast = jsp.parse contents # parse code and get the initial AST
   ast = pro.ast_mangle ast # get a new AST with mangled names
   ast = pro.ast_squeeze ast # get an AST with compression optimizations
   final_code = pro.gen_code ast # compressed code here
 
-  fs.writeFile 'lib/backbone-query.min.js', final_code
+  fs.writeFile 'backbone-query.min.js', final_code
