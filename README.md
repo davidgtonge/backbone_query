@@ -9,6 +9,8 @@ Adds the ability to search for models with a Query API similar to
 Please report any bugs, feature requests in the issue tracker.
 Pull requests are welcome!
 
+Compatible with Backbone 0.5 to 0.99
+
 Usage
 =====
 
@@ -24,7 +26,7 @@ Then simply require in your project: `QueryCollection = require("backbone-query"
 Your collections will now have two new methods: `query` and `whereBy`. Both methods accept 2 arguments -
 a query object and an options object. The `query` method returns an array of models, but the `whereBy` method
 returns a new collection and is therefore useful where you would like to chain multiple collection 
-methods / whereBy queries (thanks to [Rob W](https://github.com/Rob--W) ).
+methods / whereBy queries (thanks to [Cezary Wojtkowski](https://github.com/cezary) ).
 
 The library also supports nested compound queries and is AMD compatible (thanks to [Rob W](https://github.com/Rob--W) ).
 
