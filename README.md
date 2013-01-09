@@ -18,6 +18,10 @@ Usage
 To install, include the `js/backbone-query.min.js` file in your HTML page, after Backbone and it's dependencies.
 Then extend your collections from Backbone.QueryCollection rather than from Backbone.Collection.
 
+Backbone Query is also available via [Jam](http://jamjs.org/). Jam is a package manager for
+browser js packages and uses require.js. This is the recommended method of you want to use
+this library with require.js. To install, simply run `jam install backbone-query`.
+
 #### Server side (node.js) installation
 You can install with NPM: `npm install backbone-query`
 Then simply require in your project: `QueryCollection = require("backbone-query").QueryCollection`
